@@ -1,0 +1,141 @@
+.dashboard {
+
+  &__status {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-around;
+  }
+
+  &__status--mobile {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__status {
+
+    &__box {
+      max-width: 700px;
+      box-sizing: border-box;
+    }
+
+  }
+
+  &__headingcontainer {
+    background-color: white;
+    border-radius: 5px;
+    padding: 10px;
+    border: 1px solid #e3e3e3;
+  }
+
+  &__devicecontainer {
+    margin-bottom: 10px;
+  }
+
+  &__heading {
+    color: #00cc66;
+    margin: 0;
+    padding: 0;
+    font-weight: bold;
+    font-size: 1.3em;
+  }
+
+  &__headingmessages {
+    border: 1px solid #e3e3e3;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 350px;
+    overflow-y: scroll;
+  }
+
+  &__headingmessage {
+    padding: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e3e3e3;
+    font-size: 15px;
+  }
+
+  &__headingmessage--date {
+    color: #999999;
+  }
+
+  &__headingmessage--text {
+  }
+
+  &__device {
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  &__device--active {
+    flex: 1;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 15px;
+    background-color: red;
+    border-radius: 5px;
+    padding: 10px;
+    border: 1px solid #e3e3e3;
+    animation: device--active 1.5s infinite;
+  }
+
+  &__device--inactive {
+    flex: 1;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 15px;
+    background-color: red;
+    border-radius: 5px;
+    padding: 10px;
+    border: 1px solid #e3e3e3;
+    background-color: #999999;
+  }
+
+  @keyframes device--error {
+    0% { background-color: #e3e3e3; }
+    50% { background-color: #ff4d4d; }
+    100% { background-color: #e3e3e3; }
+  }
+
+  @keyframes device--active {
+    0% { background-color: #00e6b8; }
+    50% { background-color: #00cc66; }
+    100% { background-color: #00e6b8; }
+  }
+
+  &__graph {
+
+    &__temptext {
+      font-size: 15px;
+      font-weight: bold;
+      text-anchor: middle;
+      fill: #fff;
+    }
+
+    &__nightarea {
+      fill: #e3e3e3;
+      fill-opacity: 0.55;
+    }
+
+    &__area {
+      fill: #fff;
+      stroke: #999999;
+    }
+
+    &__line--temp {
+      fill: none;
+      stroke: red;
+    }
+
+    &__line--humid {
+      fill: none;
+      stroke: blue;
+    }
+
+  }
+
+}

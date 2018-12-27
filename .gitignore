@@ -1,0 +1,24 @@
+interface/node_modules
+source/hub-ctrl
+source/__pycache__
+
+# dependencies
+interface/.pnp
+interface/.pnp.js
+
+# testing
+interface/coverage
+
+# production
+interface/build
+
+# misc
+interface/.DS_Store
+interface/.env.local
+interface/.env.development.local
+interface/.env.test.local
+interface/.env.production.local
+
+interface/npm-debug.log*
+interface/yarn-debug.log*
+interface/yarn-error.log*
