@@ -22,6 +22,7 @@ def defaults():
     return {
         "image_dir": "/home/pi/auto_farm/images",
         "max_pump_time": 10, # maximum number of seconds pump can be active
+        "pump_interval": 60*30 # second interval at which the pump is then allowed to turn on
         "soil_interval": 60, # second interval at which to take a soil moisture reading
         "tphd_interval": 60, # second interval at which to take a temperature and humidity reading
         "image_interval": 60*30, # second interval at which to take an image
@@ -29,10 +30,12 @@ def defaults():
         "night_time": 20, # time to turn off grow lights in military time hours
         "day_temp": 26, # temperature to adjust too during the day hours
         "night_temp": 24, # temperature to adjust too during the night hours
+        "analog_soil_sensor_limit": 300, # 0-1023 analog read of the soil sensors. Pump will activate below this value
 
         "soil_sensor_type": "digital", # 'digital' for a 0 or 1 reading, 'analog' for the MCP3008 ADC Converter (0-1023)
         "digital_soil_sensor_pins": [2, 3, 4, 14],
         "soil_sensor_channels": [0, 1, 2, 3],
+
 
         "analog_sensor_pins": [10, 9, 25, 11], # When using MCP3008 ADC Converter
         "tphd_sensor_pins": [15, 18], #, 17, 27],

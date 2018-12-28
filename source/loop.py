@@ -28,16 +28,23 @@ def watch_lights():
 
 ########################################################################################################################
 def watch_soil():
+    start = time.time()
     while(True):
 
         readings = sensors.soilsensor.read(values.DEBUG)
 
         total = 0
-        for i in range(len(readings)):
-            if readings[i]["value"] == 1:
-                total+=1
+        if values.values()["soil_sensor_type"] == 'digital':
+            for i in range(len(readings)):
+                if readings[i]["value"] == 1:
+                    total+=1
+        elif values.values()["soil_sensor_type"] == 'analog':
+            for i in range(len(readings)):
+                if readings[i]["value"] <= values.values()["analog_soil_sensor_limit"]:
+                    total+=1
 
-        if total/len(readings) >= 0.75:
+        if total/len(readings) >= 0.75 and (time.time()-start) >= values.values()["pump_interval"]:
+            start = time.time()
             data.save_soil(1)
             data.save_pump()
             sensors.pump.activate(values.DEBUG)
