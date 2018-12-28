@@ -12,7 +12,7 @@ import sensors
 
 app = Flask(__name__, static_url_path='/home/pi/auto_farm/')
 CORS(app)
-    
+
 ########################################################################################################################
 @app.route('/activate/<sensor>/<value>', methods = ['POST'])
 def activate(sensor, value):
@@ -24,42 +24,42 @@ def activate(sensor, value):
 
             if int(value) == 1:
                 if values.status()["pump"] is False:
-                    sensors.pump.activate(log=True)
+                    sensors.pump.activate(values.DEBUG)
                     return "Pump activated"
                 else:
                     return "Pump in use"
             elif int(value) == 0:
-                sensors.pump.deactivate()
+                sensors.pump.deactivate(values.DEBUG)
                 return "Pump deactivated"
 
         elif sensor == "heatlights":
 
             if int(value) == 1:
                 if values.status()["heatlights"] is False:
-                    sensors.heatlights.activate()
+                    sensors.heatlights.activate(values.DEBUG)
                     return "Heat lights activated"
                 else:
                     return "Heat lights already activated"
             elif int(value) == 0:
-                sensors.heatlights.deactivate()
+                sensors.heatlights.deactivate(values.DEBUG)
                 return "Heat lights deactivated"
 
         elif sensor == "growlights":
 
             if int(value) == 1:
                 if values.status()["growlights"] is False:
-                    sensors.growlights.activate()
+                    sensors.growlights.activate(values.DEBUG)
                     return "Grow lights activated"
                 else:
                     return "Grow lights already activated"
             elif int(value) == 0:
-                sensors.growlights.deactivate()
+                sensors.growlights.deactivate(values.DEBUG)
                 return "Grow lights deactivated"
 
         elif sensor == "cameras":
 
             if values.status()["cameras"] is False:
-                sensors.cameras.activate()
+                sensors.cameras.activate(values.DEBUG)
                 return "Cameras taking images"
             else:
                 return "Cameras are currently taking images"
@@ -83,13 +83,13 @@ def read(sensor):
     else:
         if sensor == "temphumid":
             if values.status()["tphdsensors"] is False:
-                reading = sensors.thsensor.read()
+                reading = sensors.thsensor.read(values.DEBUG)
                 return jsonify({ 'data': reading })
             else:
                 return "Reading is already being taken"
         elif sensor == "soil":
             if values.status()["soilsensors"] is False:
-                reading = sensors.soilsensor.read()
+                reading = sensors.soilsensor.read(values.DEBUG)
                 return jsonify({ 'data': reading })
             else:
                 return "Reading is already being taken"

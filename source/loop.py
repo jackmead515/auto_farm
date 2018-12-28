@@ -2,7 +2,6 @@ import threading
 import time
 import datetime
 
-import gpio_controller as gpio
 import values
 import data
 import util
@@ -20,10 +19,10 @@ def watch_lights():
         if day_times is not None and night_times is not None:
             if now.hour in day_times and values.status()["growlights"] is False:
                 data.save_lights(1)
-                sensors.growlights.activate(log = True)
+                sensors.growlights.activate(values.DEBUG)
             elif now.hour in night_times and values.status()["growlights"] is True:
                 data.save_lights(0)
-                sensors.growlights.deactivate(log = True)
+                sensors.growlights.deactivate(values.DEBUG)
 
         time.sleep(10)
 
@@ -31,7 +30,7 @@ def watch_lights():
 def watch_soil():
     while(True):
 
-        readings = sensors.soilsensor.read(log = True)
+        readings = sensors.soilsensor.read(values.DEBUG)
 
         total = 0
         for i in range(len(readings)):
@@ -41,7 +40,7 @@ def watch_soil():
         if total/len(readings) >= 0.75:
             data.save_soil(1)
             data.save_pump()
-            sensors.pump.activate(log = True)
+            sensors.pump.activate(values.DEBUG)
 
         time.sleep(values.values()["soil_interval"])
 
@@ -49,7 +48,7 @@ def watch_soil():
 def watch_heat():
     while(True):
 
-        readings = sensors.thsensor.read(log = True)
+        readings = sensors.thsensor.read(values.DEBUG)
 
         totalhumid = 0
         totaltemp = 0
@@ -84,17 +83,17 @@ def watch_heat():
                 if now.hour in day_times:
                     if average >= values.values()["day_temp"] and values.status()["heatlights"] is True:
                         data.save_heat(0)
-                        sensors.heatlights.deactivate(log = True)
+                        sensors.heatlights.deactivate(values.DEBUG)
                     elif average < values.values()["day_temp"] and values.status()["heatlights"] is False:
                         data.save_heat(1)
-                        sensors.heatlights.activate(log = True)
+                        sensors.heatlights.activate(values.DEBUG)
                 elif now.hour in night_times:
                     if average >= values.values()["night_temp"] and values.status()["heatlights"] is True:
                         data.save_heat(0)
-                        sensors.heatlights.deactivate(log = True)
+                        sensors.heatlights.deactivate(values.DEBUG)
                     elif average < values.values()["night_temp"] and values.status()["heatlights"] is False:
                         data.save_heat(1)
-                        sensors.heatlights.activate(log = True)
+                        sensors.heatlights.activate(values.DEBUG)
 
         time.sleep(values.values()["tphd_interval"])
 
@@ -110,7 +109,7 @@ def watch_cameras():
 
         if day_times is not None and night_times is not None:
             if now.hour in day_times:
-                sensors.cameras.activate(log = True)
+                sensors.cameras.activate(values.DEBUG)
 
         time.sleep(values.values()["image_interval"])
 
