@@ -28,7 +28,9 @@ class Dashboard extends Component {
         temperature: [],
         humidity: [],
         heat: [],
-        messages: []
+        messages: [],
+        images: [],
+        imagedata: [],
       }
 
       this.statusInterval = null;
@@ -43,6 +45,26 @@ class Dashboard extends Component {
 
   componentDidMount() {
     this.fetchInitialData().then(() => {
+
+      Fetch.images(0).then((res) => {
+        this.setState({images: res.data.data}, () => {
+          let promises = [];
+          this.state.images.map((image) => {
+            promises.push(Fetch.image(image[1]));
+          });
+          Promise.all(promises).then((data) => {
+            data = data.map((d) => d.data.data);
+            this.setState({imagedata: data});
+          })
+        });
+      });
+
+      Fetch.messages().then((res) => {
+        const messages = res.data.data;
+        let comps = this.generateMessages(messages);
+        this.setState({messages: comps});
+      });
+
       this.statusInterval = setInterval(() => {
         if(!this.fetchingStatus) {
           this.fetchingStatus = true;
@@ -51,12 +73,6 @@ class Dashboard extends Component {
           });
         }
       }, 2000);
-    });
-
-    Fetch.messages().then((res) => {
-      const messages = res.data.data;
-      let comps = this.generateMessages(messages);
-      this.setState({messages: comps});
     });
   }
 
@@ -91,26 +107,26 @@ class Dashboard extends Component {
         Fetch.info().then((res) => {
           const info = res.data.data;
           let now = moment().format("YYYY-MM-DD HH:mm:ss");
-          let weekAgo = moment().subtract(1, 'week').format("YYYY-MM-DD HH:mm:ss");
+          let weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
           Fetch.temperature(weekAgo, now).then((res) => {
             let temperature = res.data.data;
             temperature = _.sortBy(temperature, (d) => moment(d[1]).valueOf());
             now = moment().format("YYYY-MM-DD HH:mm:ss");
-            weekAgo = moment().subtract(1, 'week').format("YYYY-MM-DD HH:mm:ss");
+            weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
             Fetch.humidity(weekAgo, now).then((res) => {
               let humidity = res.data.data;
               humidity = _.sortBy(humidity, (d) => moment(d[1]).valueOf());
               now = moment().format("YYYY-MM-DD HH:mm:ss");
-              weekAgo = moment().subtract(1, 'week').format("YYYY-MM-DD HH:mm:ss");
+              weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
               Fetch.heat(weekAgo, now).then((res) => {
                 let heat = res.data.data;
 
-                let totalHeatKiloWattHours = Util.getTotalHeatKiloWattHours(100, heat);
+                let totalHeatKiloWattHours = Util.getTotalHeatKiloWattHours(200, heat);
 
                 this.props.dispatch(refreshStatus(status));
                 this.props.dispatch(refreshInfo(info));
 
-                this.setState({temperature, info, status, humidity, heat, totalHeatKiloWattHours}, () => {
+                this.setState({temperature, info, status, humidity, heat, totalHeatKiloWattHours, loading: false}, () => {
                   this.graphTemperature();
                   resolve();
                 });
@@ -135,7 +151,7 @@ class Dashboard extends Component {
 
     document.getElementById("temperature").innerHTML = "";
 
-    const normalizeOutliers = (data, split, tolerance) => {
+    const normalizeOutliers = (data, split, tolerance, minVal, maxVal) => {
       let chunks = _.chunk(data, data.length*split);
       let newArr = [];
       for(let i = 0; i < chunks.length; i++) {
@@ -143,9 +159,12 @@ class Dashboard extends Component {
         let median = d3.median(chunk, (d) => d[2]);
         let maxMedian = median+(median*tolerance);
         let minMedian = median-(median*tolerance);
-        for(let x = 0; x < chunk.length; x++) {
+        let x = chunk.length;
+        while(x--) {
           let c = chunk[x][2];
-          if(c >= maxMedian || c <= minMedian) {
+          if(c <= minVal || c >= maxVal) {
+            chunk.splice(x, 1);
+          } else if(c >= maxMedian || c <= minMedian || c <= minVal || c >= maxVal) {
             chunk[x][2] = median;
           }
         }
@@ -154,15 +173,14 @@ class Dashboard extends Component {
       return newArr;
     }
 
-    const data = normalizeOutliers(temperature, 0.05, 0.2);
-    const data2 = normalizeOutliers(humidity, 0.05, 0.2);
+    const data = normalizeOutliers(temperature, 0.05, 0.2, 0, 50);
+    const data2 = normalizeOutliers(humidity, 0.05, 0.2, 10, 100);
 
     const currentTemp = data[data.length-1][2];
 
     const bb = d3.select("#temperature").node().getBoundingClientRect();
-    const width = bb.width-20;
-    const aspectRatioHeight = (600/700)*width;
-    const height = 600-20//width > 600 ? 600 : width;
+    const width = bb.width;
+    const height = bb.height-20;
     const padding = 20;
 
     const maxTime = moment(data[data.length-1][1]);
@@ -206,8 +224,14 @@ class Dashboard extends Component {
       .attr("offset", "0")
       .attr("stop-color", "blue")
     gradient.append("stop")
-      .attr("offset", "0.5")
+      .attr("offset", "0.30")
+      .attr("stop-color", "blue")
+    gradient.append("stop")
+      .attr("offset", "0.50")
       .attr("stop-color", "#02fc23")
+    gradient.append("stop")
+      .attr("offset", "0.70")
+      .attr("stop-color", "red")
     gradient.append("stop")
       .attr("offset", "1.0")
       .attr("stop-color", "red")
@@ -248,7 +272,7 @@ class Dashboard extends Component {
 
     const lineTimeScale = d3.scaleLinear().range([0, lineWidth]).domain([minTime.valueOf(), maxTime.valueOf()]);
     const lineTempScale = d3.scaleLinear().range([0, lineHeight]).domain([50, 0]);
-    const lineHumidScale = d3.scaleLinear().range([0, lineHeight]).domain([80, 30]);
+    const lineHumidScale = d3.scaleLinear().range([0, lineHeight]).domain([100, 10]);
     const lineHumidAxis = d3.axisRight(lineHumidScale).ticks(10).tickFormat((d) => d + " %");
     const lineTempAxis = d3.axisLeft(lineTempScale).ticks(10).tickFormat((d) => d + " C");
     const lineTimeAxis = d3.axisBottom(lineTimeScale).ticks(5).tickFormat((d) => moment(d).format("MMM Do, k:mm"));
@@ -334,16 +358,17 @@ class Dashboard extends Component {
       .attr("y", lineY+20)
       .attr("style", "font-size: 15px;")
       .text("Temperature and Humidity")
-
-
-    this.setState({ loading: false })
   }
 
   generateMessages(messages) {
     const headingMessages = [];
-    for(let i = 0; i < 20; i++) {
+    for(let i = messages.length-1; i >= 0; i--) {
       let style = {marginBottom: 10};
-      if(i == 19) { style = {border: 0, padding: 0}; }
+      if(i == 0) { style = {border: 0, padding: 0}; }
+      const message = messages[i];
+
+      //<div className="dashboard__headingmessage--date">{moment(faker.date.past()).format("MMM Do, k:mm")}</div>
+      //<div className="dashboard__headingmessage--text">{faker.lorem.sentences(2)}</div>
 
       headingMessages.push((
         <div
@@ -351,8 +376,9 @@ class Dashboard extends Component {
           style={style}
           className="dashboard__headingmessage"
         >
-         <div className="dashboard__headingmessage--date">{moment(faker.date.past()).format("MMM Do, k:mm")}</div>
-         <div className="dashboard__headingmessage--text">{faker.lorem.sentences(2)}</div>
+          <div className="dashboard__headingmessage--date">{moment(message[1]).format("MMM Do, k:mm")}</div>
+          <div className="dashboard__headingmessage--title">{message[2]}</div>
+          <div className="dashboard__headingmessage--text">{message[3]}</div>
         </div>
       ));
     }
@@ -364,29 +390,11 @@ class Dashboard extends Component {
     const { info, status } = this.props.info;
     const { temperature, humidity, heat, messages, totalHeatKiloWattHours } = this.state;
 
-    const currentTemp = temperature.length > 0 ? temperature[temperature.length-1][2] : 0;
-    const currentHumid = humidity.length > 0 ? humidity[humidity.length-1][2] : 0;
-
-    //
+    const currentTemp = status.current_temp == null ? 0 : status.current_temp[2];
+    const currentHumid = status.current_humid == null ? 0 : status.current_humid[2];
 
     return (
-      <div className="dashboard__status__box" style={{flex: 2}}>
-        <div className="dashboard__device">
-          <div style={{marginRight: 10}} className={status.cameras ? "dashboard__device--active" : "dashboard__device--inactive"}>
-              Cameras
-          </div>
-          <div className={status.growlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
-              Grow Lights
-          </div>
-        </div>
-        <div className="dashboard__device">
-          <div style={{marginRight: 10}} className={status.heatlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
-              Heat Lamps
-          </div>
-          <div className={status.pump ? "dashboard__device--active" : "dashboard__device--inactive"}>
-              Pump
-          </div>
-        </div>
+      <div className="dashboard__status__box" style={{flex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
         <div className="dashboard__headingcontainer">
           <h3 className="dashboard__heading">{"Heat Lamps: " + totalHeatKiloWattHours.toFixed(2) + " kWH"}</h3>
           <h3 className="dashboard__heading">{"Temperature: " + currentTemp + " C"}</h3>
@@ -395,19 +403,51 @@ class Dashboard extends Component {
             {messages.length > 0 ? messages : <p className="dashboard__headingmessage">No messages!</p>}
           </div>
         </div>
+        <div>
+          <div className="dashboard__device" style={{marginBottom: 10}}>
+            <div style={{marginRight: 10}} className={status.cameras ? "dashboard__device--active" : "dashboard__device--inactive"}>
+                Cameras
+            </div>
+            <div className={status.growlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
+                Grow Lights
+            </div>
+          </div>
+          <div className="dashboard__device">
+            <div style={{marginRight: 10}} className={status.heatlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
+                Heat Lamps
+            </div>
+            <div className={status.pump ? "dashboard__device--active" : "dashboard__device--inactive"}>
+                Pump
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   renderFull() {
-    const { loading } = this.state;
-    return (
-        <div className="dashboard__status">
-          <div id="temperature" className="dashboard__status__box" style={{flex: 3}}>
-          </div>
-          {loading ? null : this.renderStatus()}
-        </div>
-    );
+    const { loading, windowHeight, imagedata } = this.state;
+
+    let comps = []
+    comps.push((
+      <div className="dashboard__status" style={{height: windowHeight*0.75}} key="status">
+        {loading ? null : this.renderStatus()}
+        <div
+          id="temperature"
+          className="dashboard__status__box"
+          style={{flex: 3}}
+        />
+      </div>
+    ));
+    comps.push((
+      <div className="dashboard__images" style={{height: windowHeight*0.75}} key="images">
+        {imagedata.map((data, i) => {
+          return <img key={i} src={"data:image/png;base64," + data} style={{width: 300, height: 300}} alt=""/>
+        })}
+      </div>
+    ))
+
+    return comps;
   }
 
   renderMobile() {
@@ -421,10 +461,18 @@ class Dashboard extends Component {
     );
   }
 
-  render() {
-    const { windowHeight, windowWidth } = this.state;
+  renderLoading() {
+    return <p>{"Loading..."}</p>;
+  }
 
-    return windowWidth < 700 ? this.renderMobile() : this.renderFull();
+  render() {
+    const { loading, windowWidth } = this.state;
+
+    if(loading) {
+      return this.renderLoading();
+    } else {
+      return windowWidth < 700 ? this.renderMobile() : this.renderFull();
+    }
   }
 }
 

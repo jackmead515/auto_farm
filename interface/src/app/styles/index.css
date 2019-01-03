@@ -4,7 +4,7 @@
 .dashboard__status {
   box-sizing: border-box;
   display: flex;
-  justify-content: space-around; }
+  width: 100%; }
 
 .dashboard__status--mobile {
   box-sizing: border-box;
@@ -12,14 +12,15 @@
   flex-direction: column; }
 
 .dashboard__status__box {
-  max-width: 700px;
+  padding: 10px;
   box-sizing: border-box; }
 
 .dashboard__headingcontainer {
   background-color: white;
   border-radius: 5px;
   padding: 10px;
-  border: 1px solid #e3e3e3; }
+  border: 1px solid #e3e3e3;
+  background-color: #f2f2f2; }
 
 .dashboard__devicecontainer {
   margin-bottom: 10px; }
@@ -32,10 +33,11 @@
   font-size: 1.3em; }
 
 .dashboard__headingmessages {
+  background-color: white;
   border: 1px solid #e3e3e3;
   border-radius: 5px;
   padding: 10px;
-  max-height: 350px;
+  max-height: 300px;
   overflow-y: scroll; }
 
 .dashboard__headingmessage {
@@ -44,12 +46,15 @@
   border-bottom: 1px solid #e3e3e3;
   font-size: 15px; }
 
+.dashboard__headingmessage--title {
+  font-weight: bold; }
+
 .dashboard__headingmessage--date {
-  color: #999999; }
+  color: #555;
+  font-size: 10px; }
 
 .dashboard__device {
-  display: flex;
-  margin-bottom: 10px; }
+  display: flex; }
 
 .dashboard__device--active {
   flex: 1;
@@ -119,11 +124,11 @@ html {
   margin: 0;
   padding: 0;
   font-family: 'Open Sans', sans-serif !important;
-  background-color: #f2f2f2; }
+  background-color: white; }
 
 body {
   margin: 0;
-  padding: 10px; }
+  padding: 0px; }
 
 p {
   font-size: 15px;

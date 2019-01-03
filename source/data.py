@@ -1,6 +1,10 @@
 import datetime
 import uuid
+import base64
 import sqlite3 as sql
+import psycopg2 as postsql
+
+import values
 
 def initialize():
     connection = sql.connect("../db/database.db")
@@ -35,6 +39,7 @@ def initialize():
     CREATE TABLE IF NOT EXISTS soil (
         id VARCHAR(255) NOT NULL,
         ctime TIMESTAMP NOT NULL,
+        pin INT NOT NULL,
         value INT NOT NULL
     )
     ''')
@@ -76,7 +81,7 @@ def save_message(title, message):
 def get_messages():
     connection = sql.connect("../db/database.db")
     db = connection.cursor()
-    db.execute("SELECT * FROM notifications")
+    db.execute("SELECT * FROM notifications ORDER BY notifications.ctime ASC")
     data = db.fetchall()
     connection.commit()
     connection.close()
@@ -98,6 +103,7 @@ def get_pump():
     SELECT * FROM pump
     WHERE DATETIME(pump.ctime) >= (?)
     AND DATETIME(pump.ctime) <= (?)
+    ORDER BY pump.ctime ASC
     ''', [(start), (end)])
 
     data = db.fetchall()
@@ -121,6 +127,7 @@ def get_lights():
     SELECT * FROM lights
     WHERE DATETIME(lights.ctime) >= (?)
     AND DATETIME(lights.ctime) <= (?)
+    ORDER BY lights.ctime ASC
     ''', [(start), (end)])
 
     data = db.fetchall()
@@ -144,6 +151,7 @@ def get_heat(start, end):
     SELECT * FROM heat
     WHERE DATETIME(heat.ctime) >= (?)
     AND DATETIME(heat.ctime) <= (?)
+    ORDER BY heat.ctime ASC
     ''', [(start), (end)])
 
     data = db.fetchall()
@@ -151,11 +159,11 @@ def get_heat(start, end):
     connection.close()
     return data
 
-def save_soil(value):
+def save_soil(pin, value):
     idd = str(uuid.uuid4())
     connection = sql.connect("../db/database.db")
     db = connection.cursor()
-    db.execute("INSERT INTO soil (id, ctime, value) VALUES (?, ?, ?)", (idd, datetime.datetime.now(), value))
+    db.execute("INSERT INTO soil (id, ctime, pin, value) VALUES (?, ?, ?, ?)", (idd, datetime.datetime.now(), pin, value))
     connection.commit()
     connection.close()
 
@@ -167,9 +175,9 @@ def get_soil():
     SELECT * FROM soil
     WHERE DATETIME(soil.ctime) >= (?)
     AND DATETIME(soil.ctime) <= (?)
+    ORDER BY soil.ctime ASC
     ''', [(start), (end)])
 
-    db.execute("SELECT * FROM soil")
     data = db.fetchall()
     connection.commit()
     connection.close()
@@ -191,6 +199,7 @@ def get_humid(start, end):
     SELECT * FROM humidity
     WHERE DATETIME(humidity.ctime) >= (?)
     AND DATETIME(humidity.ctime) <= (?)
+    ORDER BY humidity.ctime ASC
     ''', [(start), (end)])
 
     data = db.fetchall()
@@ -214,9 +223,47 @@ def get_temp(start, end):
     SELECT * FROM temperature
     WHERE DATETIME(temperature.ctime) >= (?)
     AND DATETIME(temperature.ctime) <= (?)
+    ORDER BY temperature.ctime ASC
     ''', [(start), (end)])
 
     data = db.fetchall()
     connection.commit()
     connection.close()
     return data
+
+def save_image(name, data):
+    dbname = "host='" + values.values()["imagedb_host"] + "' dbname='postgres' user='postgres'"
+    c = postsql.connect(dbname)
+    db = c.cursor()
+    db.execute('''
+    INSERT INTO images (name, data) VALUES (%s, %s)
+    ''', (name, postsql.Binary(data)))
+    c.commit()
+    c.close()
+
+def get_images(index):
+    dbname = "host='" + values.values()["imagedb_host"] + "' dbname='postgres' user='postgres'"
+    c = postsql.connect(dbname)
+    db = c.cursor()
+    db.execute('''
+    SELECT id, name FROM images OFFSET %s LIMIT 5
+    ''', [index])
+    data = db.fetchall()
+    c.commit()
+    c.close()
+    return data
+
+def get_image(name):
+    dbname = "host='" + values.values()["imagedb_host"] + "' dbname='postgres' user='postgres'"
+    c = postsql.connect(dbname)
+    db = c.cursor()
+    db.execute('''
+    SELECT data FROM images WHERE images.name = %s LIMIT 1
+    ''', [name])
+    data = db.fetchall()
+    image = None
+    if data[0] is not None:
+        image = bytes.decode(base64.b64encode(data[0][0]))
+    c.commit()
+    c.close()
+    return image

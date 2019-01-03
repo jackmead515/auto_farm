@@ -4,6 +4,7 @@ from flask import jsonify
 from flask import send_from_directory
 from flask_cors import CORS
 
+import datetime
 import os
 
 import data
@@ -106,6 +107,23 @@ def validate_read(sensor):
 @app.route('/status', methods = ['POST'])
 def status():
     d = values.status()
+
+    now = datetime.datetime.now()
+    earlier = now - datetime.timedelta(minutes=10)
+    temps = data.get_temp(earlier.strftime("%Y-%m-%d %H:%M:%S"), now.strftime("%Y-%m-%d %H:%M:%S"))
+    current_temp = None
+    if len(temps) > 0:
+        current_temp = temps[len(temps)-1]
+
+    now = datetime.datetime.now()
+    earlier = now - datetime.timedelta(minutes=10)
+    humids = data.get_humid(earlier.strftime("%Y-%m-%d %H:%M:%S"), now.strftime("%Y-%m-%d %H:%M:%S"))
+    current_humid = None
+    if len(humids) > 0:
+        current_humid = humids[len(humids)-1]
+
+    d["current_temp"] = current_temp
+    d["current_humid"] = current_humid
     return jsonify({ 'data': d })
 
 ########################################################################################################################
@@ -160,6 +178,20 @@ def lights():
 def pump():
     params = request.get_json()
     d = data.get_pump(params["start"], params["end"])
+    return jsonify({'data': d})
+
+########################################################################################################################
+@app.route('/data/images', methods = ['POST'])
+def images():
+    params = request.get_json()
+    d = data.get_images(params["index"])
+    return jsonify({'data': d})
+
+########################################################################################################################
+@app.route('/data/image', methods = ['POST'])
+def image():
+    params = request.get_json()
+    d = data.get_image(params["name"])
     return jsonify({'data': d})
 
 ########################################################################################################################

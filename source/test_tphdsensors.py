@@ -1,6 +1,6 @@
 import Adafruit_DHT
 
-pins = [2, 3, 4, 14]
+pins = [15, 18]
 
 def read_tphd_sensors():
     readings = []

@@ -1,5 +1,25 @@
 import axios from 'axios';
 
+export const images = (index) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/data/images', {index}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
+export const image = (name) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/data/image', {name}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
 export const temperature = (start, end) => {
   return new Promise((resolve, reject) => {
     axios.post('/data/temperature', {start, end}).then((data) => {
@@ -66,5 +86,7 @@ export default {
   status,
   humidity,
   heat,
-  messages
+  messages,
+  image,
+  images
 }

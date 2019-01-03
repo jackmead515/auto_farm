@@ -5,20 +5,21 @@ import os
 
 import RPi.GPIO as GPIO
 import Adafruit_DHT
-import Adafruit_MCP3008
 
 import gpio_controller as gpio
 import usb_controller as usb
+import data
 import values
 
 def initalize():
-    global pump, growlights, heatlights, soilsensor, thsensor, cameras
+    global pump, growlights, heatlights, soilsensor, thsensor, cameras, wlsensor
 
     pump = Pump()
     growlights = GrowLights()
     heatlights = HeatLights()
     soilsensor = SoilSensors()
     thsensor = TPHDSensors()
+    wlsensor = WLSensor()
     cameras = Cameras()
 
 ################################################################################################################
@@ -114,8 +115,12 @@ class Cameras(Sensor):
             print("Taking images")
         cameras = usb.get_usb_cameras()
         for camera in cameras:
-            name = os.path.basename(camera) + '_' + str(round(time.time())) + '.jpg'
-            image = usb.snap_photo(camera, values.values()["image_dir"], name)
+            name = os.path.basename(camera) + '_' + str(round(time.time())) + '.png'
+            path = usb.snap_photo(camera, values.values()["image_dir"], name)
+            if image is not None:
+                image_data = open(path, 'rb').read()
+                data.save_image(name, image_data)
+                os.remove(path)
 
         values.set_status(["cameras", False])
 
@@ -127,9 +132,6 @@ class SoilSensors:
         if values.values()["soil_sensor_type"] == 'digital':
             for pin in values.values()["digital_soil_sensor_pins"]:
                 GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        elif values.values()["soil_sensor_type"] == 'analog':
-            pins = values.values()["analog_sensor_pins"]
-            self.reader = Adafruit_MCP3008.MCP3008(clk=pins[0], cs=pins[1], miso=pins[2], mosi=pins[3])
 
     def read(self, log = False):
         if log:
@@ -138,14 +140,11 @@ class SoilSensors:
 
         readings = []
         if values.values()["soil_sensor_type"] == 'digital':
-
             for pin in values.values()["digital_soil_sensor_pins"]:
                 readings.append({"value": GPIO.input(pin), "pin": pin})
-
         elif values.values()["soil_sensor_type"] == 'analog':
-
             for channel in values.values()["soil_sensor_channels"]:
-                value = self.reader.read_adc(channel)
+                value = gpio.read_channel(channel)
                 readings.append({"value": value, "pin": channel})
 
         values.set_status(["soilsensors", False])
@@ -171,6 +170,23 @@ class TPHDSensors:
         values.set_status(["tphdsensors", False])
         return readings
 
+################################################################################################################
+class WLSensor:
+
+    def __init__(self):
+        pass
+
+    def read(self, log = False):
+        if log:
+            print("Reading water level sensors")
+        values.set_status(["wlsensor", True])
+
+        readings = []
+        pin = values.values()["wlsensor_channel"]
+        readings.push({"value": gpio.read_channel(pin), "pin": pin})
+
+        values.set_status(["wlsensor", False])
+        return readings
 
 
 

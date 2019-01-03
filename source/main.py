@@ -21,8 +21,8 @@ if __name__ == '__main__':
     print("Initializing sensors...")
     sensors.initalize()
 
-    #print("Starting main loop...")
-    #loop.start()
+    print("Starting main loop...")
+    loop.start()
 
     print("Start web app...")
-    app.run(host='0.0.0.0', port=80, debug=values.DEBUG)
+    app.run(host='0.0.0.0', port=80, debug=False)

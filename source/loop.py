@@ -36,16 +36,17 @@ def watch_soil():
         total = 0
         if values.values()["soil_sensor_type"] == 'digital':
             for i in range(len(readings)):
+                data.save_soil(readings[i]["pin"], readings[i]["value"])
                 if readings[i]["value"] == 1:
                     total+=1
         elif values.values()["soil_sensor_type"] == 'analog':
             for i in range(len(readings)):
+                data.save_soil(readings[i]["pin"], readings[i]["value"])
                 if readings[i]["value"] <= values.values()["analog_soil_sensor_limit"]:
                     total+=1
 
         if total/len(readings) >= 0.75 and (time.time()-start) >= values.values()["pump_interval"]:
             start = time.time()
-            data.save_soil(1)
             data.save_pump()
             sensors.pump.activate(values.DEBUG)
 
@@ -62,10 +63,11 @@ def watch_heat():
         length = 0
         for i in range(len(readings)):
             if readings[i]["humid"] is None or readings[i]["temp"] is None:
-                data.save_message(
-                    "Invalid TH Reading",
-                    "Sensor on pin: " + str(readings[i]["pin"]) + " reported an invalid result. This sensor may be broken."
-                )
+                print("invalid th reading")
+                #data.save_message(
+                #    "Invalid TH Reading",
+                #    "Sensor on pin: " + str(readings[i]["pin"]) + " reported an invalid result. This sensor may be broken."
+                #)
             else:
                 length+=1
                 totaltemp+=readings[i]["temp"]
@@ -106,6 +108,7 @@ def watch_heat():
 
 ########################################################################################################################
 def watch_cameras():
+    start = time.time()
     while(True):
 
         mt = values.values()["morning_time"]
@@ -115,15 +118,17 @@ def watch_cameras():
         day_times, night_times = util.time_ranges(mt, nt)
 
         if day_times is not None and night_times is not None:
-            if now.hour in day_times:
+            if now.hour in day_times and (time.time()-start) >= values.values()["image_interval"]:
+                start = time.time()
                 sensors.cameras.activate(values.DEBUG)
+            else:
+                start = 0
 
-        time.sleep(values.values()["image_interval"])
-
+        time.sleep(10)
 
 ########################################################################################################################
 def start():
     threading.Thread(target=watch_cameras).start()
     threading.Thread(target=watch_lights).start()
     threading.Thread(target=watch_heat).start()
-    threading.Thread(target=watch_soil).start()
+    #threading.Thread(target=watch_soil).start()
