@@ -7,18 +7,36 @@ sudo pip install ipython
 sudo pip install --upgrade RPi.GPIO
 '''
 import RPi.GPIO as GPIO
-import Adafruit_MCP3008
+import os
+import glob
+import busio
+import digitalio
+import board
+import adafruit_mcp3xxx.mcp3008 as MCP
+from adafruit_mcp3xxx.analog_in import AnalogIn
 
 import values
 
-analog_reader = None
+analog_channels = []
 
 def initialize():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    pins = values.values()["analog_sensor_pins"]
-    mcp3008 = Adafruit_MCP3008.MCP3008(clk=pins[0], cs=pins[1], miso=pins[2], mosi=pins[3])
+    os.system('modprobe w1-gpio')
+    os.system('modprobe w1-therm')
+
+    spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+    cs = digitalio.DigitalInOut(board.D25)
+    mcp = MCP.MCP3008(spi, cs)
+    analog_channels.append(AnalogIn(mcp, MCP.P0))
+    analog_channels.append(AnalogIn(mcp, MCP.P1))
+    analog_channels.append(AnalogIn(mcp, MCP.P2))
+    analog_channels.append(AnalogIn(mcp, MCP.P3))
+    analog_channels.append(AnalogIn(mcp, MCP.P4))
+    analog_channels.append(AnalogIn(mcp, MCP.P5))
+    analog_channels.append(AnalogIn(mcp, MCP.P6))
+    analog_channels.append(AnalogIn(mcp, MCP.P7))
 
 def activate_pin(pin):
     GPIO.output(pin, GPIO.LOW)
@@ -26,5 +44,9 @@ def activate_pin(pin):
 def deactivate_pin(pin):
     GPIO.output(pin, GPIO.HIGH)
 
+def get_onewiredevices():
+    return glob.glob('/sys/bus/w1/devices/28*')
+
 def read_channel(channel):
-    return analog_reader.read_adc(channel)
+    c = analog_channels[channel]
+    return c.voltage

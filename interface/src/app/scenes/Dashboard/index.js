@@ -16,6 +16,8 @@ import TimeUtil from '../../util/TimeUtil';
 import Util from '../../util/Util';
 //import temperature from '../../util/samples/temperature.json';
 
+import GalleryImage from '../../components/GalleryImage';
+
 import FAIcon from 'react-fontawesome';
 
 class Dashboard extends Component {
@@ -48,27 +50,32 @@ class Dashboard extends Component {
 
       Fetch.images(0).then((res) => {
         this.setState({images: res.data.data}, () => {
-          let promises = [];
+          //let promises = [];
           this.state.images.map((image) => {
-            promises.push(Fetch.image(image[1]));
+            Fetch.image(image[1]).then((res) => {
+              let { imagedata } = this.state;
+              imagedata.push({name: image[1], data: res.data.data});
+              this.setState({imagedata});
+            });
           });
-          Promise.all(promises).then((data) => {
+          /*Promise.all(promises).then((data) => {
             data = data.map((d) => d.data.data);
             this.setState({imagedata: data});
-          })
+          })*/
         });
       });
 
-      Fetch.messages().then((res) => {
+      /*Fetch.messages().then((res) => {
         const messages = res.data.data;
         let comps = this.generateMessages(messages);
         this.setState({messages: comps});
-      });
+      });*/
 
       this.statusInterval = setInterval(() => {
         if(!this.fetchingStatus) {
           this.fetchingStatus = true;
           this.fetchStatusAndInfo().then(() => {
+            this.updateTemperatureSlider()
             this.fetchingStatus = false;
           });
         }
@@ -146,13 +153,32 @@ class Dashboard extends Component {
     });
   }
 
+  updateTemperatureSlider() {
+    const { info } = this.state;
+
+    const bb = d3.select("#temperature").node().getBoundingClientRect();
+    const width = bb.width;
+    const height = bb.height-20;
+    const padding = 20;
+    const boxX = padding+(padding/2);
+    const boxWidth = width-padding*3.2;
+
+    const barTempScale = d3.scaleLinear().range([0, boxWidth]).domain([0, 50]);
+
+    d3.select("#temp-slider")
+      .transition().ease(d3.easeBounceOut)
+      .duration(1000)
+      .attr("x", barTempScale(info.current_temp)+boxX-(2.5));
+  }
+
   graphTemperature() {
     const { temperature, humidity, info } = this.state;
 
     document.getElementById("temperature").innerHTML = "";
 
     const normalizeOutliers = (data, split, tolerance, minVal, maxVal) => {
-      let chunks = _.chunk(data, data.length*split);
+      split = data.length*split > 10 ? 10 : data.lenght*split;
+      let chunks = _.chunk(data, split);
       let newArr = [];
       for(let i = 0; i < chunks.length; i++) {
         let chunk = chunks[i];
@@ -165,7 +191,8 @@ class Dashboard extends Component {
           if(c <= minVal || c >= maxVal) {
             chunk.splice(x, 1);
           } else if(c >= maxMedian || c <= minMedian || c <= minVal || c >= maxVal) {
-            chunk[x][2] = median;
+            chunk.splice(x, 1);
+            //chunk[x][2] = median;
           }
         }
         newArr = newArr.concat(chunk);
@@ -176,7 +203,7 @@ class Dashboard extends Component {
     const data = normalizeOutliers(temperature, 0.05, 0.2, 0, 50);
     const data2 = normalizeOutliers(humidity, 0.05, 0.2, 10, 100);
 
-    const currentTemp = data[data.length-1][2];
+    const currentTemp = info.current_temp;
 
     const bb = d3.select("#temperature").node().getBoundingClientRect();
     const width = bb.width;
@@ -248,6 +275,7 @@ class Dashboard extends Component {
       .attr("width", boxWidth)
 
     svg.append("rect")
+      .attr("id", "temp-slider")
       .attr("height", boxHeight)
       .attr("width", 5)
       .attr("x", boxX)
@@ -390,18 +418,15 @@ class Dashboard extends Component {
     const { info, status } = this.props.info;
     const { temperature, humidity, heat, messages, totalHeatKiloWattHours } = this.state;
 
-    const currentTemp = status.current_temp == null ? 0 : status.current_temp[2];
-    const currentHumid = status.current_humid == null ? 0 : status.current_humid[2];
+    const currentTemp = info.current_temp;
+    const currentHumid = 0.0//status.current_humid == null ? 0 : status.current_humid;
 
     return (
-      <div className="dashboard__status__box" style={{flex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
-        <div className="dashboard__headingcontainer">
+      <div className="dashboard__status__box" style={{flex: 2, display: 'flex', flexDirection: 'column'}}>
+        <div className="dashboard__headingcontainer" style={{marginBottom: 10}}>
           <h3 className="dashboard__heading">{"Heat Lamps: " + totalHeatKiloWattHours.toFixed(2) + " kWH"}</h3>
-          <h3 className="dashboard__heading">{"Temperature: " + currentTemp + " C"}</h3>
-          <h3 className="dashboard__heading">{"Humidity: " + currentHumid + "%"}</h3>
-          <div className="dashboard__headingmessages" style={{marginTop: 10}}>
-            {messages.length > 0 ? messages : <p className="dashboard__headingmessage">No messages!</p>}
-          </div>
+          <h3 className="dashboard__heading">{"Temperature: " + currentTemp.toFixed(2) + " C"}</h3>
+          <h3 className="dashboard__heading">{"Humidity: " + currentHumid.toFixed(2) + "%"}</h3>
         </div>
         <div>
           <div className="dashboard__device" style={{marginBottom: 10}}>
@@ -440,9 +465,9 @@ class Dashboard extends Component {
       </div>
     ));
     comps.push((
-      <div className="dashboard__images" style={{height: windowHeight*0.75}} key="images">
+      <div className="dashboard__images" key="images">
         {imagedata.map((data, i) => {
-          return <img key={i} src={"data:image/png;base64," + data} style={{width: 300, height: 300}} alt=""/>
+          return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
         })}
       </div>
     ))

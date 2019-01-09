@@ -1,0 +1,20 @@
+.gallery {
+
+    &__image {
+      padding: 10px;
+      border: 1px solid #e3e3e3;
+      background-color: #f2f2f2;
+      border-radius: 5px;
+      margin: 10px;
+    }
+
+    &__image--name {
+
+    }
+
+    &__image--image {
+      width: 300px;
+      height: 250px;
+    }
+
+}

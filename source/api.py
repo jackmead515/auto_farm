@@ -10,6 +10,7 @@ import os
 import data
 import values
 import sensors
+import loop
 
 app = Flask(__name__, static_url_path='/home/pi/auto_farm/')
 CORS(app)
@@ -82,9 +83,9 @@ def read(sensor):
     if validation is not None:
         return validation
     else:
-        if sensor == "temphumid":
-            if values.status()["tphdsensors"] is False:
-                reading = sensors.thsensor.read(values.DEBUG)
+        if sensor == "temp":
+            if values.status()["tpprobes"] is False:
+                reading = sensors.tpprobes.read(values.DEBUG)
                 return jsonify({ 'data': reading })
             else:
                 return "Reading is already being taken"
@@ -98,8 +99,8 @@ def read(sensor):
 def validate_read(sensor):
     if sensor is None:
         return "Pass a sensor argument"
-    elif sensor is not None and sensor != "temphumid" and sensor != "soil":
-        return "Pass a sensor value of 'temphumid', 'soil'"
+    elif sensor is not None and sensor != "temp" and sensor != "soil":
+        return "Pass a sensor value of 'temp', 'soil'"
     else:
         return None
 
@@ -107,23 +108,6 @@ def validate_read(sensor):
 @app.route('/status', methods = ['POST'])
 def status():
     d = values.status()
-
-    now = datetime.datetime.now()
-    earlier = now - datetime.timedelta(minutes=10)
-    temps = data.get_temp(earlier.strftime("%Y-%m-%d %H:%M:%S"), now.strftime("%Y-%m-%d %H:%M:%S"))
-    current_temp = None
-    if len(temps) > 0:
-        current_temp = temps[len(temps)-1]
-
-    now = datetime.datetime.now()
-    earlier = now - datetime.timedelta(minutes=10)
-    humids = data.get_humid(earlier.strftime("%Y-%m-%d %H:%M:%S"), now.strftime("%Y-%m-%d %H:%M:%S"))
-    current_humid = None
-    if len(humids) > 0:
-        current_humid = humids[len(humids)-1]
-
-    d["current_temp"] = current_temp
-    d["current_humid"] = current_humid
     return jsonify({ 'data': d })
 
 ########################################################################################################################

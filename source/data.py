@@ -246,7 +246,7 @@ def get_images(index):
     c = postsql.connect(dbname)
     db = c.cursor()
     db.execute('''
-    SELECT id, name FROM images OFFSET %s LIMIT 5
+    SELECT id, name FROM images OFFSET %s LIMIT 50
     ''', [index])
     data = db.fetchall()
     c.commit()

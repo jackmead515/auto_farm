@@ -12,13 +12,14 @@ import data
 import values
 
 def initalize():
-    global pump, growlights, heatlights, soilsensor, thsensor, cameras, wlsensor
+    global pump, growlights, heatlights, soilsensor, thsensor, cameras, wlsensor, tpprobes
 
     pump = Pump()
     growlights = GrowLights()
     heatlights = HeatLights()
     soilsensor = SoilSensors()
     thsensor = TPHDSensors()
+    tpprobes = TPProbes()
     wlsensor = WLSensor()
     cameras = Cameras()
 
@@ -117,7 +118,7 @@ class Cameras(Sensor):
         for camera in cameras:
             name = os.path.basename(camera) + '_' + str(round(time.time())) + '.png'
             path = usb.snap_photo(camera, values.values()["image_dir"], name)
-            if image is not None:
+            if path is not None:
                 image_data = open(path, 'rb').read()
                 data.save_image(name, image_data)
                 os.remove(path)
@@ -129,9 +130,24 @@ class Cameras(Sensor):
 class SoilSensors:
 
     def __init__(self):
-        if values.values()["soil_sensor_type"] == 'digital':
-            for pin in values.values()["digital_soil_sensor_pins"]:
-                GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        pass
+
+    def normalize_reading(value):
+        '''
+        Returns a value from 0 to 100. 100 being very wet,
+        and 0 being no water present. Value passed should be between
+        1.5 and 3.3 correlating to the voltage of the sensor. If the value
+        rounded is 0 or is less than 1, returns -1.
+        '''
+        if value < 1 or round(value) < 1:
+            return -1
+        else:
+            normalized = int((100 - (value * 100 / 3.3))*2)
+            if normalized < 0:
+                normalized = 0
+            if normalized > 100:
+                normalized = 100
+            return normalized
 
     def read(self, log = False):
         if log:
@@ -139,19 +155,17 @@ class SoilSensors:
         values.set_status(["soilsensors", True])
 
         readings = []
-        if values.values()["soil_sensor_type"] == 'digital':
-            for pin in values.values()["digital_soil_sensor_pins"]:
-                readings.append({"value": GPIO.input(pin), "pin": pin})
-        elif values.values()["soil_sensor_type"] == 'analog':
-            for channel in values.values()["soil_sensor_channels"]:
-                value = gpio.read_channel(channel)
-                readings.append({"value": value, "pin": channel})
+        for channel in values.values()["soil_sensor_channels"]:
+            value = gpio.read_channel(channel)
+            if value is not -1:
+                readings.append({"value": self.normalize_reading(value), "pin": channel})
 
         values.set_status(["soilsensors", False])
         return readings
 
 
 ################################################################################################################
+### DHT11
 class TPHDSensors:
 
     def __init__(self):
@@ -168,6 +182,51 @@ class TPHDSensors:
             readings.append({"humid": humid, "temp": temp, "pin": pin})
 
         values.set_status(["tphdsensors", False])
+        return readings
+
+################################################################################################################
+### DS18B20
+class TPProbes:
+
+    def __init__(self):
+        pass
+
+    def read_device_file(self, dfile):
+        f = open(dfile, 'r')
+        lines = f.readlines()
+        f.close()
+        return lines
+
+    def read_temperature(self, dfile):
+        lines = self.read_device_file(dfile)
+        start = time.time()
+        while lines[0].strip()[-3:] != 'YES':
+            if time.time()-start >= 10:
+                return -1
+            else:
+                time.sleep(0.2)
+                lines = self.read_device_file(dfile)
+        equals_pos = lines[1].find('t=')
+        if equals_pos != -1:
+            temp_string = lines[1][equals_pos+2:]
+            temp_c = float(temp_string) / 1000.0
+            return temp_c
+        else:
+            return -1
+
+    def read(self, log = False):
+        if log:
+            print("Reading temperature probes")
+        values.set_status(["tpprobes", True])
+
+        readings = []
+        devices = gpio.get_onewiredevices()
+        for device in devices:
+            dfile = device + '/w1_slave'
+            ctemp = self.read_temperature(dfile)
+            readings.append({"temp": ctemp, "pin": 2})
+
+        values.set_status(["tpprobes", False])
         return readings
 
 ################################################################################################################
