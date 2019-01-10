@@ -7,12 +7,14 @@ import usb_controller as usb
 cameras = usb.get_usb_cameras()
 
 for camera in cameras:
+
     name = os.path.basename(camera) + '_' + str(round(time.time())) + '.png'
-    image = usb.snap_photo(camera, '/home/pi/', name)
-    if image is not None:
+    path = usb.snap_photo(camera, '/home/pi/auto_farm/images/', name)
+
+    if path is not None:
         print(camera + ' took image: ' + name)
 
-        image_data = open(image, 'rb').read()
+        image_data = open(path, 'rb').read()
 
         try:
             dbname = "host='192.168.1.16' dbname='postgres' user='postgres'"
@@ -30,5 +32,4 @@ for camera in cameras:
         except:
             print("failed to connect to database")
 
-
-        print(name + " uploaded to database")
+        os.remove(path)

@@ -33,7 +33,10 @@ export const getTotalHeatTime = (data) => {
 
 export const getTotalHeatKiloWattHours = (watts, data) => {
   data = _.sortBy(data, (d) => moment(d[1]).valueOf());
-  return (watts/1000) * (getTotalHeatTime(data)/3600000);
+  const kiloWatts = (watts/1000) * (getTotalHeatTime(data)/3600000);
+  const startDate = moment(data[0][1]);
+  const endDate = moment(data[data.length-1][1]);
+  return { kiloWatts, startDate, endDate }
 }
 
 export default {

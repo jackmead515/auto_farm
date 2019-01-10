@@ -32,7 +32,7 @@ def defaults():
         "night_time": 20, # time to turn off grow lights in military time hours
         "day_temp": 26, # temperature to adjust too during the day hours
         "night_temp": 24, # temperature to adjust too during the night hours
-        "soil_sensor_limit": 50, # 0-1023 analog read of the soil sensors. Pump will activate below this value
+        "soil_sensor_limit": 60, # 0-100 analog read of the soil sensors.
         "soil_sensor_channels": [0, 1, 2, 3],
         #"analog_sensor_pins": [10, 9, 25, 11], # When using MCP3008 ADC Converter
         #"tphd_sensor_pins": [15, 18], #, 17, 27],

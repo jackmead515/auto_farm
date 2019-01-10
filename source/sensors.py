@@ -12,13 +12,13 @@ import data
 import values
 
 def initalize():
-    global pump, growlights, heatlights, soilsensor, thsensor, cameras, wlsensor, tpprobes
+    global pump, growlights, heatlights, soilsensor, cameras, wlsensor, tpprobes#, thsensor
 
     pump = Pump()
     growlights = GrowLights()
     heatlights = HeatLights()
     soilsensor = SoilSensors()
-    thsensor = TPHDSensors()
+    #thsensor = TPHDSensors()
     tpprobes = TPProbes()
     wlsensor = WLSensor()
     cameras = Cameras()

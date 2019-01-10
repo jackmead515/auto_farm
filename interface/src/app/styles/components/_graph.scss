@@ -1,0 +1,47 @@
+.graph {
+
+  &__axis .domain {
+    stroke: #999999;
+  }
+
+  &__axis line {
+    stroke: #999999;
+  }
+
+  &__axis text {
+    stroke: #999999;
+    stroke-width: 0.5px;
+  }
+
+  &__temptext {
+    font-size: 15px;
+    font-weight: bold;
+    text-anchor: middle;
+    fill: #fff;
+  }
+
+  &__nightarea {
+    fill: #e3e3e3;
+    fill-opacity: 0.55;
+  }
+
+  &__area {
+    fill: #fff;
+    stroke: #999999;
+  }
+
+  &__line--temp {
+    fill: none;
+    stroke-width: 1.5px;
+    stroke: red;
+    stroke-opacity: 0.7;
+  }
+
+  &__line--humid {
+    fill: none;
+    stroke-width: 1.5px;
+    stroke: blue;
+    stroke-opacity: 0.7;
+  }
+
+}

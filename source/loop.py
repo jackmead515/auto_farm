@@ -119,7 +119,7 @@ def watch_heat():
 
 ########################################################################################################################
 def watch_cameras():
-    start = time.time()
+    start = 0
     while(True):
         try:
             mt = values.values()["morning_time"]

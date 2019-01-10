@@ -2,6 +2,9 @@
 
 ## A software solution for an autonomous plant growth chamber
 
+[[https://github.com/jackmead515/auto_farm/blob/master/interface/public/images/auto_farm_dashboard.png|alt=dashboard]]
+
+
 ### TO INSTALL
 
 #### Get a PI
@@ -18,10 +21,10 @@ up to 4x web cameras for phenotyping (optional) -> (link) <br/>
 1x 4 slot 5V-110V relay board -> (link) <br/>
 1x MCP3008 ADC converter (optional) -> (link) <br/>
 1x optical water level sensor (optional) -> (link) <br/>
-1x have fun (optional) <br/> 
+1x have fun (optional) <br/>
 
 #### Install dependencies
-``` 
+```
 
 sudo apt-get update
 sudo apt-get install build-essential python3-dev python3-pip python3-smbus sqlite3 git fswebcam

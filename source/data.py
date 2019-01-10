@@ -236,8 +236,8 @@ def save_image(name, data):
     c = postsql.connect(dbname)
     db = c.cursor()
     db.execute('''
-    INSERT INTO images (name, data) VALUES (%s, %s)
-    ''', (name, postsql.Binary(data)))
+    INSERT INTO jack_images (name, data, ctime) VALUES (%s, %s, %s)
+    ''', (name, postsql.Binary(data), datetime.datetime.now()))
     c.commit()
     c.close()
 
@@ -246,7 +246,9 @@ def get_images(index):
     c = postsql.connect(dbname)
     db = c.cursor()
     db.execute('''
-    SELECT id, name FROM images OFFSET %s LIMIT 50
+    SELECT id, name, ctime FROM jack_images
+    ORDER BY ctime ASC
+    OFFSET %s LIMIT 50
     ''', [index])
     data = db.fetchall()
     c.commit()
@@ -258,7 +260,7 @@ def get_image(name):
     c = postsql.connect(dbname)
     db = c.cursor()
     db.execute('''
-    SELECT data FROM images WHERE images.name = %s LIMIT 1
+    SELECT data FROM jack_images WHERE jack_images.name = %s LIMIT 1
     ''', [name])
     data = db.fetchall()
     image = None
