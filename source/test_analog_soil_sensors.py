@@ -6,10 +6,10 @@ import adafruit_mcp3xxx.mcp3008 as MCP
 from adafruit_mcp3xxx.analog_in import AnalogIn
 
 def normalize(value):
-    if value < 1 or round(value) <= 0:
+    if value < 1 or round(value) < 1:
         return -1
     else:
-        normalized = int((100 - (value * 100 / 3.3))*2)
+        normalized = int((-50 *value)+165)
         if normalized < 0:
             normalized = 0
         if normalized > 100:

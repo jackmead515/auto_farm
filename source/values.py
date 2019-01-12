@@ -25,7 +25,7 @@ def defaults():
         "imagedb_host": "192.168.1.16",
         "max_pump_time": 10, # maximum number of seconds pump can be active
         "pump_interval": 60*30, # second interval at which the pump is then allowed to turn on
-        "soil_interval": 60, # second interval at which to take a soil moisture reading
+        "soil_interval": 30, # second interval at which to take a soil moisture reading
         "tp_interval": 10, # second interval at which to take a temperature and humidity reading
         "image_interval": 60*30, # second interval at which to take an image
         "morning_time": 5, # time to turn on grow lights in military time hours
@@ -40,7 +40,10 @@ def defaults():
         "grow_lights_pin": 22,
         "pump_pin": 24,
         "wlsensor_channel": 4,
-        "current_temp": 0.0
+
+        "current_temp": 0.0,
+        "current_soil": [],
+        "current_humid": 0.0
     }
 
 def values():

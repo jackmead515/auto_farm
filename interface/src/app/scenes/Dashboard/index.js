@@ -29,6 +29,7 @@ class Dashboard extends Component {
       this.state = {
         loading: true,
         info: null,
+        toggleSoil: false,
         temperature: [],
         humidity: [],
         heat: [],
@@ -52,7 +53,8 @@ class Dashboard extends Component {
 
       Fetch.images(0).then((res) => {
         this.setState({images: res.data.data}, () => {
-          this.state.images.map((image) => {
+
+          this.state.images.slice(0, 4).map((image) => {
             Fetch.image(image[1]).then((res) => {
               let { imagedata } = this.state;
               imagedata.push({name: image[1], date: image[2], data: res.data.data});
@@ -187,7 +189,7 @@ class Dashboard extends Component {
   }
 
   renderCurrentTemperature() {
-    const { info } = this.state;
+    const { info } = this.props.info;
 
     const currentTemp = info.current_temp == null ? "n/a" : info.current_temp.toFixed(2);
     const colorScale = d3.scaleLinear().domain([0, 26, 50]).range(["blue", "#02fc23", "red"]);
@@ -201,48 +203,86 @@ class Dashboard extends Component {
   }
 
   renderCurrentHumidity() {
-    const { info } = this.state;
+    const { info } = this.props.info;
 
     const currentHumid = info.current_humid == null ? "n/a" : info.current_humid.toFixed(2);
 
     return (
-      <div className="dashboard__heading" style={{border: 0, margin: 0, padding: 0}}>
+      <div className="dashboard__heading">
         <h3><FAIcon className="dashboard__waterdrop" name="tint"/> Humidity</h3>
         <p>{currentHumid} %</p>
       </div>
     )
   }
 
-  renderStatus(mobile) {
+  renderCurrentSoilMoisture() {
+    const { info } = this.props.info;
+    const { toggleSoil } = this.state;
+
+    let currentSoil = info.current_soil == null || (info.current_soil && info.current_soil.length <= 0) ? [0.0] : info.current_soil;
+    currentSoil = currentSoil.filter((d) => d.value !== -1);
+    const median = d3.median(currentSoil, (d) => d.value);
+
+    //const colorScale = d3.scaleLinear().domain([0, 100]).range(["#edc647", "#47c3ed"]);
+
+    let sensors = null;
+    if(toggleSoil && currentSoil.length > 0) {
+      sensors = (
+        <div className="animatedFast fadeInDown row" style={{justifyContent: 'space-around', marginTop: 10}}>
+          {currentSoil.map((d, i) => {
+            return (
+              <div key={i} className="dashboard__soilsensor">
+                <FAIcon name="filter"/> {d.value} %
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+
+    return (
+      <div className="dashboard__colheading">
+        <div className="row" style={{justifyContent: 'space-between', alignItems: 'center'}}>
+          <h3><FAIcon className="dashboard__soilwater" name="water"/> Soil Moisture</h3>
+          <p>
+            <span>~{median.toFixed(2)} %</span>
+            <FAIcon
+              className="dashboard__soilbutton"
+              name={toggleSoil ? "caret-square-left" : "caret-square-down"}
+              onClick={() => this.setState({toggleSoil: !this.state.toggleSoil})}
+            />
+          </p>
+        </div>
+        {sensors}
+      </div>
+    )
+  }
+
+  renderStatus() {
     const { info, status } = this.props.info;
     const { temperature, humidity, heat, messages, heatKiloWatts } = this.state;
 
-    const containerStyle = mobile ? {paddingBottom: 0} : {flex: 2}
-
     return (
-      <div className="dashboard__statusinfo" style={containerStyle}>
-        <div style={{marginBottom: 10}}>
-          <div className="dashboard__device" style={{marginBottom: 10}}>
-            <div style={{marginRight: 10}} className={status.cameras ? "dashboard__device--active" : "dashboard__device--inactive"}>
-                Cameras
-            </div>
-            <div className={status.growlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
-                Grow Lights
-            </div>
+      <div className="dashboard__statusinfo">
+        <div className="dashboard__devicecontainer">
+          <div className={status.cameras ? "dashboard__device--active" : "dashboard__device--inactive"}>
+              Cameras
           </div>
-          <div className="dashboard__device">
-            <div style={{marginRight: 10}} className={status.heatlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
-                Heat Lamps
-            </div>
-            <div className={status.pump ? "dashboard__device--active" : "dashboard__device--inactive"}>
-                Pump
-            </div>
+          <div className={status.growlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
+              Grow Lights
+          </div>
+          <div className={status.heatlights ? "dashboard__device--active" : "dashboard__device--inactive"}>
+              Heat Lamps
+          </div>
+          <div className={status.pump ? "dashboard__device--active" : "dashboard__device--inactive"}>
+              Pump
           </div>
         </div>
         <div className="dashboard__headingcontainer">
           {this.renderEnergyConsumption()}
           {this.renderCurrentTemperature()}
           {this.renderCurrentHumidity()}
+          {this.renderCurrentSoilMoisture()}
         </div>
       </div>
     );
@@ -251,10 +291,9 @@ class Dashboard extends Component {
   renderFull() {
     const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature } = this.state;
 
-    let comps = []
-    comps.push((
-      <div className="dashboard__status" style={{height: windowHeight*0.75}} key="status">
-        {loading ? null : this.renderStatus()}
+    return (
+      <div className="dashboard__container">
+        {this.renderStatus()}
         <Graph
           className="dashboard__graphcontainer"
           windowWidth={windowWidth}
@@ -263,25 +302,24 @@ class Dashboard extends Component {
           humidity={humidity}
           info={info}
         />
+        <div className="dashboard__images">
+          {imagedata.map((data, i) => {
+            return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
+          })}
+          <div className="dashboard__images--viewmore">View more...</div>
+        </div>
       </div>
-    ));
-    comps.push((
-      <div className="dashboard__images" key="images">
-        {imagedata.map((data, i) => {
-          return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
-        })}
-      </div>
-    ))
-
-    return comps;
+    );
   }
 
   renderMobile() {
     const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature } = this.state;
     return (
-        <div className="dashboard__status--mobile">
-          {loading ? null : this.renderStatus(true)}
+        <div className="dashboard__container--mobile">
+          {this.renderStatus()}
           <Graph
+            mobile={true}
+            style={{height: ((5/14)*windowWidth+(1550/7))}}
             className="dashboard__graphcontainer--mobile"
             windowWidth={windowWidth}
             windowHeight={windowHeight}
@@ -289,6 +327,12 @@ class Dashboard extends Component {
             humidity={humidity}
             info={info}
           />
+          <div className="dashboard__images--mobile">
+            {imagedata.map((data, i) => {
+              return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
+            })}
+            <div className="dashboard__images--viewmore--mobile">View more...</div>
+          </div>
         </div>
     );
   }

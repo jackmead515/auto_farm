@@ -247,7 +247,7 @@ def get_images(index):
     db = c.cursor()
     db.execute('''
     SELECT id, name, ctime FROM jack_images
-    ORDER BY ctime ASC
+    ORDER BY ctime DESC
     OFFSET %s LIMIT 50
     ''', [index])
     data = db.fetchall()

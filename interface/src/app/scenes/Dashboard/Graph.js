@@ -29,18 +29,22 @@ class Graph extends Component {
     const windowSizeChanged = (windowWidth !== this.props.windowWidth || windowHeight !== this.props.windowHeight);
 
     if(initial || windowSizeChanged) {
-      if(this.graphTimeout) {
-        clearTimeout(this.graphTimeout);
-      }
-      this.graphTimeout = setTimeout(() => {
+      if(!this.state.rendered) {
         this.setState({rendered: true})
         this.graphTemperature();
-      }, 100);
+      } else {
+        if(this.graphTimeout) { clearTimeout(this.graphTimeout); }
+        this.graphTimeout = setTimeout(() => {
+          this.setState({rendered: true})
+          this.graphTemperature();
+        }, 100);
+      }
+
     }
   }
 
   graphTemperature() {
-    const { temperature, humidity } = this.props;
+    const { temperature, humidity, mobile } = this.props;
     const { info } = this.props.info;
 
     document.getElementById("temperature").innerHTML = "";
@@ -83,18 +87,19 @@ class Graph extends Component {
     const minTime = moment(data[0][1]);
 
     const boxHeight = 20;
-    const boxWidth = width-(padding*8);
+    const boxWidth = mobile ? width-(padding*3) : width-(padding*7);
     const boxY = padding*2;
-    const boxX = padding*4;
+    const boxX = mobile ? padding*2 : padding*4;
+    const boxScaleTicks = mobile ? 5 : 10;
 
     const barTempScale = d3.scaleLinear().range([0, boxWidth]).domain([0, 50]);
-    const barTempAxis = d3.axisTop(barTempScale).ticks(10).tickFormat((d) => d);
+    const barTempAxis = d3.axisTop(barTempScale).ticks(boxScaleTicks).tickFormat((d) => d);
 
     const svg = d3.select("#temperature")
       .append("svg")
       .attr("id", "graph")
-      .attr("width", width)
-      .attr("height", height)
+      .attr("width", "100%")
+      .attr("height", "100%")
       .attr("class", "animated fadeIn dashboard__graph")
 
     svg.append("g")
@@ -112,8 +117,8 @@ class Graph extends Component {
     var gradient = svg.append("linearGradient")
       .attr("y1", 0)
       .attr("y2", 0)
-      .attr("x1", boxY*1.5)
-      .attr("x2", boxY*1.5+boxWidth)
+      .attr("x1", "0%")
+      .attr("x2", "100%")
       .attr("id", "gradient")
       .attr("gradientUnits", "userSpaceOnUse")
 
@@ -121,16 +126,16 @@ class Graph extends Component {
       .attr("offset", "0")
       .attr("stop-color", "blue")
     gradient.append("stop")
-      .attr("offset", (26/50) - 0.3) // "0.30"
+      .attr("offset", "30%")
       .attr("stop-color", "blue")
     gradient.append("stop")
-      .attr("offset", (26/50)) //"0.50"
+      .attr("offset", "50%")
       .attr("stop-color", "#02fc23")
     gradient.append("stop")
-      .attr("offset", (26/50) + 0.3) //"0.70"
+      .attr("offset", "70%")
       .attr("stop-color", "red")
     gradient.append("stop")
-      .attr("offset", "1.0")
+      .attr("offset", "100%")
       .attr("stop-color", "red")
 
     svg.append("rect")
@@ -155,10 +160,13 @@ class Graph extends Component {
       .duration(1000)
       .attr("x", barTempScale(currentTemp)+boxX-(2.5))
 
-    const lineHeight = height-boxY*2-padding*4;
+    const lineHeight = mobile ? height-boxY*2-padding : height-boxY*2-padding*3;
     const lineWidth = boxWidth;
     const lineX = boxX;
     const lineY = boxY+boxHeight+10+10;
+    const lineHumidScaleTicks = mobile ? 5 : 10;
+    const lineTempScaleTicks = mobile ? 5 : 10;
+    const lineTimeScaleTicks = mobile ? 2 : 5;
 
     const graph = svg.append("rect")
       .attr("class", "graph__area")
@@ -170,19 +178,21 @@ class Graph extends Component {
     const lineTimeScale = d3.scaleLinear().range([0, lineWidth]).domain([minTime.valueOf(), maxTime.valueOf()]);
     const lineTempScale = d3.scaleLinear().range([0, lineHeight]).domain([50, 0]);
     const lineHumidScale = d3.scaleLinear().range([0, lineHeight]).domain([100, 10]);
-    const lineHumidAxis = d3.axisRight(lineHumidScale).ticks(10).tickFormat((d) => d);
-    const lineTempAxis = d3.axisLeft(lineTempScale).ticks(10).tickFormat((d) => d);
-    const lineTimeAxis = d3.axisBottom(lineTimeScale).ticks(5).tickFormat((d) => moment(d).format("MMM Do, k:mm"));
-    const temps = [5, 10, 15, 20, 25, 30, 35, 40, 45];
+    const lineHumidAxis = d3.axisRight(lineHumidScale).ticks(lineHumidScaleTicks).tickFormat((d) => d);
+    const lineTempAxis = d3.axisLeft(lineTempScale).ticks(lineTempScaleTicks).tickFormat((d) => d);
+    const lineTimeAxis = d3.axisBottom(lineTimeScale).ticks(lineTimeScaleTicks).tickFormat((d) => moment(d).format("MMM Do, k:mm"));
 
-    temps.map((t) => {
-      svg.append("rect")
-        .attr("x", lineX)
-        .attr("y", lineY+lineTempScale(t))
-        .attr("width", lineWidth)
-        .attr("height", 1)
-        .attr("style", "fill: #e3e3e3")
-    });
+    if(!mobile) {
+      const temps = [5, 10, 15, 20, 25, 30, 35, 40, 45];
+      temps.map((t) => {
+        svg.append("rect")
+          .attr("x", lineX)
+          .attr("y", lineY+lineTempScale(t))
+          .attr("width", lineWidth)
+          .attr("height", 1)
+          .attr("style", "fill: #e3e3e3")
+      });
+    }
 
     const { morning_time, night_time } = info;
     const timeRanges = TimeUtil.getHourRanges(morning_time, night_time);
@@ -253,28 +263,30 @@ class Graph extends Component {
       .attr("class", "graph__axis")
       .call(lineHumidAxis);
 
-    svg.append("text")
-      .attr("x", 30)
-      .attr("y", height/2)
-      .attr("text-anchor", "middle")
-      .attr("style", "font-size: 15px; fill: red;")
-      .attr("transform", "rotate(-90," + 30 + "," + (height/2) + ")")
-      .text("Temperature (Celcius)")
+    if(!mobile) {
+      svg.append("text")
+        .attr("x", 30)
+        .attr("y", height/2)
+        .attr("text-anchor", "middle")
+        .attr("style", "font-size: 15px; fill: red;")
+        .attr("transform", "rotate(-90," + 30 + "," + (height/2) + ")")
+        .text("Temperature (Celcius)")
 
-    svg.append("text")
-      .attr("x", width-30)
-      .attr("y", height/2)
-      .attr("text-anchor", "middle")
-      .attr("style", "font-size: 15px; fill: blue;")
-      .attr("transform", "rotate(90," + (width-30) + "," + (height/2) + ")")
-      .text("Humidity (Percentage)")
+      svg.append("text")
+        .attr("x", width-30)
+        .attr("y", height/2)
+        .attr("text-anchor", "middle")
+        .attr("style", "font-size: 15px; fill: blue;")
+        .attr("transform", "rotate(90," + (width-15) + "," + (height/2) + ")")
+        .text("Humidity (Percentage)")
 
-    svg.append("text")
-      .attr("x", width/2)
-      .attr("y", height-15)
-      .attr("text-anchor", "middle")
-      .attr("style", "font-size: 15px;")
-      .text("Time (7 days)")
+      svg.append("text")
+        .attr("x", width/2)
+        .attr("y", height-15)
+        .attr("text-anchor", "middle")
+        .attr("style", "font-size: 15px;")
+        .text("Time")
+    }
   }
 
   render() {

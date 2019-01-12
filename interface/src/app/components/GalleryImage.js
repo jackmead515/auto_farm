@@ -24,8 +24,8 @@ export default class GalleryImage extends Component {
     return (
       <div className="gallery__image">
         <img className="gallery__image--image" src={data} alt=""/>
-        <p className="gallery__image--date">{date}</p>
-        <p className="gallery__image--name">{name}</p>
+          <p className="gallery__image--date">{date}</p>
+          <p className="gallery__image--name">{name}</p>
       </div>
     );
   }

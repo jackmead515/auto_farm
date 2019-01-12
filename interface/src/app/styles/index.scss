@@ -3,8 +3,12 @@
 @import "./components/graph";
 
 @import "./lib/Rubik/rubik.css";
-@import "./lib/fontawesome/css/font-awesome.css";
+@import "./lib/fontawesome/css/all.min.css";
 @import "./lib/animate/animate.css";
+
+html, body, #root, .dashboard__container {
+  height: 100vh;
+}
 
 html {
   margin: 0;
@@ -12,6 +16,7 @@ html {
   font-family: 'Rubik', sans-serif !important;
   background-color: #f4f7fc !important;
   color: #404040 !important;
+  font-size: 15px;
 }
 
 body {

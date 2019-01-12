@@ -22,3 +22,5 @@ interface/.env.production.local
 interface/npm-debug.log*
 interface/yarn-debug.log*
 interface/yarn-error.log*
+
+interface/src/app/styles/lib/*

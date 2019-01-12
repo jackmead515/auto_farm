@@ -132,7 +132,7 @@ class SoilSensors:
     def __init__(self):
         pass
 
-    def normalize_reading(value):
+    def normalize_reading(self, value):
         '''
         Returns a value from 0 to 100. 100 being very wet,
         and 0 being no water present. Value passed should be between
@@ -142,7 +142,7 @@ class SoilSensors:
         if value < 1 or round(value) < 1:
             return -1
         else:
-            normalized = int((100 - (value * 100 / 3.3))*2)
+            normalized = int((-50 *value)+165)
             if normalized < 0:
                 normalized = 0
             if normalized > 100:
@@ -157,7 +157,7 @@ class SoilSensors:
         readings = []
         for channel in values.values()["soil_sensor_channels"]:
             value = gpio.read_channel(channel)
-            if value is not -1:
+            if value >= 0:
                 readings.append({"value": self.normalize_reading(value), "pin": channel})
 
         values.set_status(["soilsensors", False])

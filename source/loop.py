@@ -1,6 +1,7 @@
 import threading
 import time
 import datetime
+import statistics
 
 import values
 import data
@@ -9,10 +10,11 @@ import sensors
 
 def start():
     threading.Thread(target=read_temperature_probes).start()
+    threading.Thread(target=read_soil_sensors).start()
     threading.Thread(target=watch_cameras).start()
     threading.Thread(target=watch_lights).start()
     threading.Thread(target=watch_heat).start()
-    #threading.Thread(target=watch_soil).start()
+    threading.Thread(target=watch_soil).start()
 
 ########################################################################################################################
 def read_temperature_probes():
@@ -42,6 +44,46 @@ def read_temperature_probes():
         except Exception as e:
             print(e)
 
+########################################################################################################################
+def read_soil_sensors():
+    start_recording_soil = time.time()
+    while(True):
+        try:
+
+            all_readings = {}
+            true_readings = []
+
+            for i in range(5):
+                readings = sensors.soilsensor.read(values.DEBUG)
+                for x in range(len(readings)):
+                    r = readings[x]
+                    if r["pin"] not in all_readings:
+                        all_readings[r["pin"]] = []
+                    all_readings[r["pin"]].append(r["value"])
+                time.sleep(1)
+
+            for key in all_readings:
+                fake_reading = False
+                for val in all_readings[key]:
+                    if val == -1:
+                        fake_reading = True
+                        break
+                if not fake_reading:
+                    median = statistics.median(all_readings[key])
+                    true_readings.append({"pin": key, "value": median})
+
+            values.set_value(["current_soil", true_readings])
+
+            if time.time()-start_recording_soil >= 60:
+                start_recording_soil = time.time()
+                for i in range(len(true_readings)):
+                    r = true_readings[i]
+                    data.save_soil(r["pin"], r["value"])
+
+            time.sleep(values.values()["soil_interval"])
+
+        except Exception as e:
+            print(e)
 
 ########################################################################################################################
 def watch_lights():
@@ -67,23 +109,24 @@ def watch_lights():
 
 ########################################################################################################################
 def watch_soil():
-    start = time.time()
     while(True):
         try:
-            readings = sensors.soilsensor.read(values.DEBUG)
 
-            total = 0
-            for i in range(len(readings)):
-                data.save_soil(readings[i]["pin"], readings[i]["value"])
-                if readings[i]["value"] <= values.values()["soil_sensor_limit"]:
-                    total+=1
+            readings = values.values()["current_soil"]
+            if len(readings) > 0:
+                total_below_threshold = 0
+                for i in range(len(readings)):
+                    if readings[i]["value"] <= values.values()["soil_sensor_limit"]:
+                        total_below_threshold+=1
 
-            if total/len(readings) >= 0.75 and (time.time()-start) >= values.values()["pump_interval"]:
-                start = time.time()
-                data.save_pump()
-                sensors.pump.activate(values.DEBUG)
+                if total_below_threshold/len(readings) >= 0.75:
+                    data.save_pump()
+                    #sensors.pump.activate(values.DEBUG)
 
-            time.sleep(values.values()["soil_interval"])
+                time.sleep(values.values()["pump_interval"])
+            else:
+                time.sleep(10)
+
         except Exception as e:
             print(e)
 
