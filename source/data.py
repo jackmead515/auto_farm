@@ -167,7 +167,7 @@ def save_soil(pin, value):
     connection.commit()
     connection.close()
 
-def get_soil():
+def get_soil(start, end):
     connection = sql.connect("../db/database.db")
     db = connection.cursor()
 

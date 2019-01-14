@@ -20,6 +20,16 @@ export const image = (name) => {
   })
 }
 
+export const soil = (start, end) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/data/soil', {start, end}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
 export const temperature = (start, end) => {
   return new Promise((resolve, reject) => {
     axios.post('/data/temperature', {start, end}).then((data) => {
@@ -88,5 +98,6 @@ export default {
   heat,
   messages,
   image,
-  images
+  images,
+  soil
 }

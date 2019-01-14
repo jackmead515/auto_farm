@@ -2,15 +2,19 @@
 @import url(./lib/fontawesome/css/all.min.css);
 @import url(./lib/animate/animate.css);
 .dashboard__container {
+  height: 100%;
   display: grid;
   grid-template-columns: 2fr 3fr;
+  grid-template-rows: repeat(5, minmax(1fr, 500px));
   grid-gap: 10px;
   padding: 10px;
   box-sizing: border-box; }
 
 .dashboard__container--mobile {
+  height: 100%;
   display: grid;
-  grid-template-rows: repeat(3, auto);
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(4, minmax(1fr, 300px));
   grid-gap: 10px;
   padding: 10px; }
 
@@ -18,6 +22,13 @@
   display: grid;
   grid-template-rows: 1fr 3fr;
   grid-gap: 10px; }
+
+.dashboard__graphcontainer--temp {
+  height: 500px; }
+
+.dashboard__graphcontainer--soil {
+  grid-column: span 2;
+  height: 500px; }
 
 .dashboard__graphcontainer--mobile {
   height: 350px; }
@@ -200,6 +211,11 @@
   fill: #fff;
   stroke: #999999; }
 
+.graph__line {
+  fill: none;
+  stroke-width: 1.5px;
+  stroke-opacity: 0.7; }
+
 .graph__line--temp {
   fill: none;
   stroke-width: 1.5px;
@@ -211,9 +227,6 @@
   stroke-width: 1.5px;
   stroke: blue;
   stroke-opacity: 0.7; }
-
-html, body, #root, .dashboard__container {
-  height: 100vh; }
 
 html {
   margin: 0;

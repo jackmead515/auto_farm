@@ -16,7 +16,8 @@ import TimeUtil from '../../util/TimeUtil';
 import Util from '../../util/Util';
 //import temperature from '../../util/samples/temperature.json';
 
-import Graph from './Graph';
+import TempHumidGraph from './TempHumidGraph';
+import SoilGraph from './SoilGraph';
 
 import GalleryImage from '../../components/GalleryImage';
 
@@ -53,12 +54,10 @@ class Dashboard extends Component {
 
       Fetch.images(0).then((res) => {
         this.setState({images: res.data.data}, () => {
-
           this.state.images.slice(0, 4).map((image) => {
             Fetch.image(image[1]).then((res) => {
               let { imagedata } = this.state;
               imagedata.push({name: image[1], date: image[2], data: res.data.data});
-              //imagedata = _.sortBy(imagedata, (d) => moment(d.date).valueOf());
               this.setState({imagedata});
             });
           });
@@ -126,16 +125,19 @@ class Dashboard extends Component {
               weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
               Fetch.heat(weekAgo, now).then((res) => {
                 let heat = res.data.data;
-
                 let kwh = Util.getTotalHeatKiloWattHours(200, heat);
+                now = moment().format("YYYY-MM-DD HH:mm:ss");
+                weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
+                Fetch.soil(weekAgo, now).then((res) => {
+                  let soil = res.data.data;
 
-                this.props.dispatch(refreshStatus(status));
-                this.props.dispatch(refreshInfo(info));
+                  this.props.dispatch(refreshStatus(status));
+                  this.props.dispatch(refreshInfo(info));
 
-                this.setState({temperature, info, status, humidity, heat, heatKiloWatts: kwh, loading: false}, () => {
-                  resolve();
+                  this.setState({temperature, info, status, humidity, heat, soil, heatKiloWatts: kwh, loading: false}, () => {
+                    resolve();
+                  });
                 });
-
               });
             });
           });
@@ -223,8 +225,6 @@ class Dashboard extends Component {
     currentSoil = currentSoil.filter((d) => d.value !== -1);
     const median = d3.median(currentSoil, (d) => d.value);
 
-    //const colorScale = d3.scaleLinear().domain([0, 100]).range(["#edc647", "#47c3ed"]);
-
     let sensors = null;
     if(toggleSoil && currentSoil.length > 0) {
       sensors = (
@@ -289,13 +289,13 @@ class Dashboard extends Component {
   }
 
   renderFull() {
-    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature } = this.state;
+    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature, soil } = this.state;
 
     return (
       <div className="dashboard__container">
         {this.renderStatus()}
-        <Graph
-          className="dashboard__graphcontainer"
+        <TempHumidGraph
+          className="dashboard__graphcontainer--temp"
           windowWidth={windowWidth}
           windowHeight={windowHeight}
           temperature={temperature}
@@ -308,16 +308,23 @@ class Dashboard extends Component {
           })}
           <div className="dashboard__images--viewmore">View more...</div>
         </div>
+        <SoilGraph
+          className="dashboard__graphcontainer--soil"
+          windowWidth={windowWidth}
+          windowHeight={windowHeight}
+          soil={soil}
+          info={info}
+        />
       </div>
     );
   }
 
   renderMobile() {
-    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature } = this.state;
+    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature, soil } = this.state;
     return (
         <div className="dashboard__container--mobile">
           {this.renderStatus()}
-          <Graph
+          <TempHumidGraph
             mobile={true}
             style={{height: ((5/14)*windowWidth+(1550/7))}}
             className="dashboard__graphcontainer--mobile"
@@ -333,6 +340,15 @@ class Dashboard extends Component {
             })}
             <div className="dashboard__images--viewmore--mobile">View more...</div>
           </div>
+          <SoilGraph
+            mobile={true}
+            style={{height: ((5/14)*windowWidth+(1550/7))}}
+            className="dashboard__graphcontainer--mobile"
+            windowWidth={windowWidth}
+            windowHeight={windowHeight}
+            soil={soil}
+            info={info}
+          />
         </div>
     );
   }

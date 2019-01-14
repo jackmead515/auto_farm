@@ -2,8 +2,8 @@
 
 ## A software solution for an autonomous plant growth chamber
 
-![alt text](https://github.com/jackmead515/auto_farm/blob/master/interface/public/images/auto_farm_dashboard2.png)
-
+![alt text](https://github.com/jackmead515/auto_farm/blob/master/interface/public/images/auto_farm_dashboard_full.png)
+![alt text](https://github.com/jackmead515/auto_farm/blob/master/interface/public/images/auto_farm_dashboard_mobile.png)
 
 ### TO INSTALL
 
