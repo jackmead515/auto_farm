@@ -20,6 +20,7 @@ if __name__ == '__main__':
 
     print("Initializing sensors...")
     sensors.initalize()
+    sensors.buzzer.activate("start", 1, values.DEBUG)
 
     print("Starting main loop...")
     loop.start()

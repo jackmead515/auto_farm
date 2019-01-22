@@ -1,0 +1,32 @@
+.navigator {
+
+  &__container {
+    grid-column: span 2;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #e3e3e3;
+    border-radius: 5px;
+  }
+
+  &__container--mobile {
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #e3e3e3;
+    border-radius: 5px;
+  }
+
+  &__button {
+    font-size: 20px;
+  }
+
+  &__button:hover {
+    cursor: pointer;
+    color: #555;
+  }
+
+  &__button:visited, &__button:focus, &__button:active {
+    text-decoration: none;
+    color: #404040;
+  }
+
+}

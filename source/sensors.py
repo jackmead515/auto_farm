@@ -5,6 +5,11 @@ import os
 
 import RPi.GPIO as GPIO
 import Adafruit_DHT
+#import Adafruit_GPIO.SPI as SPI
+#import Adafruit_SSD1306
+#from PIL import Image
+#from PIL import ImageDraw
+#from PIL import ImageFont
 
 import gpio_controller as gpio
 import usb_controller as usb
@@ -12,7 +17,7 @@ import data
 import values
 
 def initalize():
-    global pump, growlights, heatlights, soilsensor, cameras, wlsensor, tpprobes#, thsensor
+    global buzzer, display, pump, growlights, heatlights, soilsensor, cameras, wlsensor, tpprobes#, thsensor
 
     pump = Pump()
     growlights = GrowLights()
@@ -22,6 +27,8 @@ def initalize():
     tpprobes = TPProbes()
     wlsensor = WLSensor()
     cameras = Cameras()
+    buzzer = Buzzer()
+    #display = OLEDDisplay()
 
 ################################################################################################################
 class Sensor:
@@ -58,12 +65,11 @@ class Pump(Sensor):
         if log:
             print("Powering water pump on")
         gpio.activate_pin(values.values()["pump_pin"])
-        time.sleep(values.values()["max_pump_time"])
+        time.sleep(values.values()["pump_time"])
         if log:
             print("Powering water pump off")
         gpio.deactivate_pin(values.values()["pump_pin"])
         values.set_status(["pump", False])
-
 
 ################################################################################################################
 class GrowLights(Sensor):
@@ -83,8 +89,6 @@ class GrowLights(Sensor):
             print("Powering grow lights on")
         gpio.activate_pin(values.values()["grow_lights_pin"])
 
-
-
 ################################################################################################################
 class HeatLights(Sensor):
 
@@ -103,7 +107,6 @@ class HeatLights(Sensor):
             print("Powering heat lamps on")
         gpio.activate_pin(values.values()["heat_lights_pin"])
 
-
 ################################################################################################################
 class Cameras(Sensor):
 
@@ -117,14 +120,28 @@ class Cameras(Sensor):
         cameras = usb.get_usb_cameras()
         for camera in cameras:
             name = os.path.basename(camera) + '_' + str(round(time.time())) + '.png'
-            path = usb.snap_photo(camera, values.values()["image_dir"], name)
-            if path is not None:
-                image_data = open(path, 'rb').read()
-                data.save_image(name, image_data)
-                os.remove(path)
+            usb.snap_photo(camera, values.values()["image_dir"], name)
+
+        if log:
+            print("Attempting to upload images")
+        total = 0
+        files = os.listdir(values.values()["image_dir"])
+        for f in files:
+            if total >= 16:
+                break
+            if os.path.isfile(f) and f.endswith('.png'):
+                try:
+                    path = os.path.join(values.values["image_dir"], f)
+                    image_data = open(path, 'rb').read()
+                    data.save_image(f, image_data)
+                    os.remove(path)
+                    total+=1
+                except Exception as e:
+                    if values.DEBUG:
+                        print(e)
+
 
         values.set_status(["cameras", False])
-
 
 ################################################################################################################
 class SoilSensors:
@@ -162,7 +179,6 @@ class SoilSensors:
 
         values.set_status(["soilsensors", False])
         return readings
-
 
 ################################################################################################################
 ### DHT11
@@ -241,16 +257,84 @@ class WLSensor:
         values.set_status(["wlsensor", True])
 
         readings = []
-        pin = values.values()["wlsensor_channel"]
-        readings.push({"value": gpio.read_channel(pin), "pin": pin})
+        channel = values.values()["water_level_channel"]
+        value = gpio.read_channel(channel)
+        if value >= 0:
+            readings.append({"value": value, "pin": channel})
 
         values.set_status(["wlsensor", False])
         return readings
 
+################################################################################################################
+class Buzzer:
+    def __init__(self):
+        GPIO.setup(values.values()["buzzer_pin"], GPIO.IN)
+        GPIO.setup(values.values()["buzzer_pin"], GPIO.OUT)
+        self.tones = {
+            "start": {
+                "pitches": [523,988,1047],
+                "duration": [0.2,0.2,0.2]
+            },
+            "error": {
+                "pitches": [262,330,0,262,330,0],
+                "duration": [0.5,1,0.5,0.5,1,0.5]
+            }
+        }
 
+    def activate(self, name, count, log = False):
+        threading.Thread(target=self.play, args=(name, count, log,)).start()
 
+    def play(self, name, count, log):
+        values.set_status(["buzzer", True])
+        for i in range(count):
+            x=0
+            for p in self.tones[name]["pitches"]:
+              buzzer.buzz(p, self.tones[name]["duration"][x])
+              time.sleep(self.tones[name]["duration"][x]*0.5)
+              x+=1
+        values.set_status(["buzzer", False])
 
+    def buzz(self,pitch,duration):
+        if(pitch==0):
+         time.sleep(duration)
+         return
+        period = 1.0 / pitch
+        delay = period / 2
+        cycles = int(duration * pitch)
 
+        for i in range(cycles):
+         GPIO.output(values.values()["buzzer_pin"], True)
+         time.sleep(delay)
+         GPIO.output(values.values()["buzzer_pin"], False)
+         time.sleep(delay)
 
+################################################################################################################
+'''
+class OLEDDisplay:
 
-###
+    def __init__(self):
+        self.display = None
+        self.draw = None
+        self.width = None
+        self.height = None
+        self.font = None
+
+    def initialize():
+        self.display = Adafruit_SSD1306.SSD1306_128_64(rst=0)
+        self.display.begin()
+        self.display.clear()
+        self.display.display()
+        self.width = self.display.width
+        self.height = self.display.height
+        self.draw = ImageDraw.Draw(Image.new('1', (width, height)))
+        self.draw.rectangle((0,0,width,height), outline=0, fill=0)
+        self.font = ImageFont.load_default()
+
+    def refresh():
+        self.draw.rectangle((0,0,self.width,self.height), outline=0, fill=0)
+        self.display.clear()
+        self.display.display()
+        self.draw.text((0, 8), "Temperature: " + str(values.values()["current_temp"]), font=self.font, fill=255)
+        self.draw.text((0, 16), "Humidity: " + str(values.values()["current_humid"]),  font=self.font, fill=255)
+'''
+################################################################################################################

@@ -16,6 +16,8 @@ import TimeUtil from '../../util/TimeUtil';
 import Util from '../../util/Util';
 //import temperature from '../../util/samples/temperature.json';
 
+import Navigator from '../Navigator';
+
 import TempHumidGraph from './TempHumidGraph';
 import SoilGraph from './SoilGraph';
 
@@ -34,9 +36,12 @@ class Dashboard extends Component {
         temperature: [],
         humidity: [],
         heat: [],
+        lights: [],
+        pump: [],
         messages: [],
         images: [],
         imagedata: [],
+        energyUsage: null
       }
 
       this.statusInterval = null;
@@ -61,6 +66,19 @@ class Dashboard extends Component {
               this.setState({imagedata});
             });
           });
+        });
+      });
+
+      let now = moment().format("YYYY-MM-DD HH:mm:ss");
+      let weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
+      Fetch.heat(weekAgo, now).then((res) => {
+        const heat = res.data.data;
+        now = moment().format("YYYY-MM-DD HH:mm:ss");
+        weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
+        Fetch.lights(weekAgo, now).then((res) => {
+          const lights = res.data.data;
+          const energyUsage = Util.calculateEnergy({sensors: 3.5, heat: 200, lights: 70}, heat, lights)
+          this.setState({heat, lights, energyUsage})
         });
       });
 
@@ -123,20 +141,14 @@ class Dashboard extends Component {
               humidity = _.sortBy(humidity, (d) => moment(d[1]).valueOf());
               now = moment().format("YYYY-MM-DD HH:mm:ss");
               weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
-              Fetch.heat(weekAgo, now).then((res) => {
-                let heat = res.data.data;
-                let kwh = Util.getTotalHeatKiloWattHours(200, heat);
-                now = moment().format("YYYY-MM-DD HH:mm:ss");
-                weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
-                Fetch.soil(weekAgo, now).then((res) => {
-                  let soil = res.data.data;
+              Fetch.soil(weekAgo, now).then((res) => {
+                let soil = res.data.data;
 
-                  this.props.dispatch(refreshStatus(status));
-                  this.props.dispatch(refreshInfo(info));
+                this.props.dispatch(refreshStatus(status));
+                this.props.dispatch(refreshInfo(info));
 
-                  this.setState({temperature, info, status, humidity, heat, soil, heatKiloWatts: kwh, loading: false}, () => {
-                    resolve();
-                  });
+                this.setState({temperature, info, status, humidity, soil, loading: false}, () => {
+                  resolve();
                 });
               });
             });
@@ -178,14 +190,20 @@ class Dashboard extends Component {
   }
 
   renderEnergyConsumption() {
-    const { heatKiloWatts } = this.state;
+    const { energyUsage } = this.state;
 
-    let elapsed = heatKiloWatts.endDate.from(heatKiloWatts.startDate, true);
+    let comp = null;
+    if(energyUsage) {
+        let elapsed = energyUsage.endDate.from(energyUsage.startDate, true);
+        comp = <p>{"~" + energyUsage.kiloWatts.toFixed(2) + " kWH / " + elapsed}</p>
+    } else {
+      comp = <div className="loader--small" />
+    }
 
     return (
       <div className="dashboard__heading">
         <h3><FAIcon className="dashboard__energybolt" name="bolt"/> Energy Usage</h3>
-        <p>{"~" + heatKiloWatts.kiloWatts.toFixed(2) + " kWH / " + elapsed}</p>
+        {comp}
       </div>
     )
   }
@@ -225,6 +243,8 @@ class Dashboard extends Component {
     currentSoil = currentSoil.filter((d) => d.value !== -1);
     const median = d3.median(currentSoil, (d) => d.value);
 
+    const medianExpression = median ? "~" + median.toFixed(2) + "%" : 'n/a';
+
     let sensors = null;
     if(toggleSoil && currentSoil.length > 0) {
       sensors = (
@@ -245,7 +265,7 @@ class Dashboard extends Component {
         <div className="row" style={{justifyContent: 'space-between', alignItems: 'center'}}>
           <h3><FAIcon className="dashboard__soilwater" name="water"/> Soil Moisture</h3>
           <p>
-            <span>~{median.toFixed(2)} %</span>
+            <span>{medianExpression}</span>
             <FAIcon
               className="dashboard__soilbutton"
               name={toggleSoil ? "caret-square-left" : "caret-square-down"}
@@ -293,6 +313,7 @@ class Dashboard extends Component {
 
     return (
       <div className="dashboard__container">
+        <Navigator />
         {this.renderStatus()}
         <TempHumidGraph
           className="dashboard__graphcontainer--temp"
@@ -323,6 +344,7 @@ class Dashboard extends Component {
     const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature, soil } = this.state;
     return (
         <div className="dashboard__container--mobile">
+          <Navigator mobile={true} />
           {this.renderStatus()}
           <TempHumidGraph
             mobile={true}

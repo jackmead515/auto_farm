@@ -193,5 +193,7 @@ def validate_set(ttype, value):
         return "Pass a type and value argument"
     elif ttype is not None and ttype not in values.defaults():
         return "Invalid type argument"
+    elif ttype is not None and value is not None and ttype in values.defaults() and type(values.defaults()[ttype]) is not type(value):
+        return "Invalid valid argument for type"
     else:
         return None

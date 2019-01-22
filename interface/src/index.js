@@ -11,6 +11,7 @@ import * as serviceWorker from './serviceWorker';
 import './app/styles/index.css';
 
 import Dashboard from './app/scenes/Dashboard';
+import Settings from './app/scenes/Settings';
 
 export const SERVERIP = process.env.NODE_ENV === 'development' ? 'http://192.168.1.58' : 'http://192.168.1.58';
 
@@ -25,6 +26,7 @@ ReactDOM.render((
       <Router history={history} onUpdate={() => window.scrollTo(0,0)}>
         <Switch>
           <Route exact path="/" component={Dashboard} />
+          <Route exact path="/settings" component={Settings} />
           <Route render={() => <Redirect to="/" />} />
         </Switch>
       </Router>

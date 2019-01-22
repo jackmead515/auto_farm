@@ -63,7 +63,8 @@ def initialize():
     db.execute('''
     CREATE TABLE IF NOT EXISTS pump (
         id VARCHAR(255) NOT NULL,
-        ctime TIMESTAMP NOT NULL
+        ctime TIMESTAMP NOT NULL,
+        duration INT NOT NULL
     )
     ''')
 
@@ -87,15 +88,15 @@ def get_messages():
     connection.close()
     return data
 
-def save_pump():
+def save_pump(duration):
     idd = str(uuid.uuid4())
     connection = sql.connect("../db/database.db")
     db = connection.cursor()
-    db.execute("INSERT INTO pump (id, ctime) VALUES (?, ?)", (idd, datetime.datetime.now()))
+    db.execute("INSERT INTO pump (id, ctime, duration) VALUES (?, ?, ?)", (idd, datetime.datetime.now(), duration))
     connection.commit()
     connection.close()
 
-def get_pump():
+def get_pump(start, end):
     connection = sql.connect("../db/database.db")
     db = connection.cursor()
 
@@ -119,7 +120,7 @@ def save_lights(value):
     connection.commit()
     connection.close()
 
-def get_lights():
+def get_lights(start, end):
     connection = sql.connect("../db/database.db")
     db = connection.cursor()
 

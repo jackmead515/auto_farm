@@ -39,7 +39,6 @@ class Graph extends Component {
           this.graphSoil();
         }, 100);
       }
-
     }
   }
 

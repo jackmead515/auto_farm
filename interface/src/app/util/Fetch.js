@@ -60,6 +60,26 @@ export const heat = (start, end) => {
   })
 }
 
+export const pump = (start, end) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/data/pump', {start, end}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
+export const lights = (start, end) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/data/lights', {start, end}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
 export const info = () => {
   return new Promise((resolve, reject) => {
     axios.post('/info').then((data) => {
@@ -99,5 +119,7 @@ export default {
   messages,
   image,
   images,
-  soil
+  soil,
+  pump,
+  lights
 }

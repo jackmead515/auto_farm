@@ -1,6 +1,8 @@
 @import "./components/dashboard";
 @import "./components/gallery";
 @import "./components/graph";
+@import "./components/navigator";
+@import "./components/settings";
 
 @import "./lib/Rubik/rubik.css";
 @import "./lib/fontawesome/css/all.min.css";
@@ -35,6 +37,26 @@ p {
 
 h3 {
   margin: 0;
+  font-size: 20px;
+}
+
+button {
+  border: 1px solid #e3e3e3;
+  background-color: #f2f2f2;
+  color: #555;
+  border-radius: 3px;
+  padding: 5px;
+  font-size: 15px;
+  outline:none;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+button:active {
+  background-color: #00e6b8;
+  color: white;
 }
 
 ::placeholder {
@@ -51,4 +73,118 @@ h3 {
 .col {
   display: flex;
   flex-direction: column;
+}
+
+.loader--small {
+  box-sizing: border-box;
+  border: 2px solid #f3f3f3; /* Light grey */
+  border-top: 2px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.checkbox {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  font-size: 10px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  padding-left: 23px;
+  margin-bottom: 17px;
+}
+
+.checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 15px;
+  width: 15px;
+  background-color: #eee;
+  border: 1px solid #e3e3e3;
+}
+
+.checkbox:hover input ~ .checkmark {
+  background-color: #ccc;
+}
+
+.checkbox input:checked ~ .checkmark {
+  background-color: #00e6b8;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.checkbox .checkmark:after {
+  left: 4.5px;
+  top: 1px;
+  width: 3px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.radiobutton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 15px;
+  width: 15px;
+  background-color: #eee;
+  border-radius: 50%;
+  border: 1px solid #e3e3e3;
+}
+
+.checkbox:hover input ~ .radiobutton {
+  background-color: #ccc;
+}
+
+.checkbox input:checked ~ .radiobutton {
+  background-color: #00e6b8;
+}
+
+.radiobutton:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.checkbox input:checked ~ .radiobutton:after {
+  display: block;
+}
+
+.checkbox .radiobutton:after {
+  left: 3px;
+  top: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: white;
 }
