@@ -1,22 +1,23 @@
 #from multiprocessing import Pool
 import threading
 import time
+import statistics as stats
 import os
 
 import RPi.GPIO as GPIO
 import Adafruit_DHT
-#import Adafruit_GPIO.SPI as SPI
-#import Adafruit_SSD1306
-#from PIL import Image
-#from PIL import ImageDraw
-#from PIL import ImageFont
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_SSD1306
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 
 import gpio_controller as gpio
 import usb_controller as usb
 import data
 import values
 
-def initalize():
+def initialize():
     global buzzer, display, pump, growlights, heatlights, soilsensor, cameras, wlsensor, tpprobes#, thsensor
 
     pump = Pump()
@@ -28,7 +29,7 @@ def initalize():
     wlsensor = WLSensor()
     cameras = Cameras()
     buzzer = Buzzer()
-    #display = OLEDDisplay()
+    display = OLEDDisplay()
 
 ################################################################################################################
 class Sensor:
@@ -120,18 +121,18 @@ class Cameras(Sensor):
         cameras = usb.get_usb_cameras()
         for camera in cameras:
             name = os.path.basename(camera) + '_' + str(round(time.time())) + '.png'
-            usb.snap_photo(camera, values.values()["image_dir"], name)
+            usb.snap_photo(camera, '/home/pi/auto_farm/images', name)
 
         if log:
             print("Attempting to upload images")
         total = 0
-        files = os.listdir(values.values()["image_dir"])
+        files = os.listdir('/home/pi/auto_farm/images')
         for f in files:
+            path = os.path.join('/home/pi/auto_farm/images', f)
             if total >= 16:
                 break
-            if os.path.isfile(f) and f.endswith('.png'):
+            if os.path.isfile(path) and f.endswith('.png'):
                 try:
-                    path = os.path.join(values.values["image_dir"], f)
                     image_data = open(path, 'rb').read()
                     data.save_image(f, image_data)
                     os.remove(path)
@@ -149,22 +150,33 @@ class SoilSensors:
     def __init__(self):
         pass
 
-    def normalize_reading(self, value):
-        '''
-        Returns a value from 0 to 100. 100 being very wet,
-        and 0 being no water present. Value passed should be between
-        1.5 and 3.3 correlating to the voltage of the sensor. If the value
-        rounded is 0 or is less than 1, returns -1.
-        '''
-        if value < 1 or round(value) < 1:
-            return -1
-        else:
-            normalized = int((-50 *value)+165)
-            if normalized < 0:
-                normalized = 0
-            if normalized > 100:
-                normalized = 100
-            return normalized
+    def calibrate(self, log = False):
+        if log:
+            print("Calibrating soil sensors")
+        values.set_status(["soil_calibrating", True])
+
+        data = {}
+        for i in range(120): # 2 minutes
+            for channel in values.values()["soil_sensor_channels"]:
+                if str(channel) not in data:
+                    data[str(channel)] = []
+                value = gpio.read_channel(channel)
+                if value >= 20000:
+                    data[str(channel)].append({"v": value, "p": channel})
+            time.sleep(1)
+        calvals = {}
+        for key in data:
+            vs = []
+            for kp in data[key]:
+                vs.append(kp["v"])
+            median = stats.median(vs)
+            stdev = stats.stdev(vs)
+            calvals[key] = {'median': median, 'std': stdev}
+
+        values.set_value(["soil_calibration_values", calvals])
+        values.set_status(["soil_calibrating", False])
+        if log:
+            print("Calibrating soil sensors completed")
 
     def read(self, log = False):
         if log:
@@ -174,8 +186,8 @@ class SoilSensors:
         readings = []
         for channel in values.values()["soil_sensor_channels"]:
             value = gpio.read_channel(channel)
-            if value >= 0:
-                readings.append({"value": self.normalize_reading(value), "pin": channel})
+            if value >= 20000:
+                readings.append({"value": value, "pin": channel})
 
         values.set_status(["soilsensors", False])
         return readings
@@ -309,7 +321,6 @@ class Buzzer:
          time.sleep(delay)
 
 ################################################################################################################
-'''
 class OLEDDisplay:
 
     def __init__(self):
@@ -319,22 +330,32 @@ class OLEDDisplay:
         self.height = None
         self.font = None
 
-    def initialize():
+    def initialize(self):
         self.display = Adafruit_SSD1306.SSD1306_128_64(rst=0)
         self.display.begin()
         self.display.clear()
         self.display.display()
         self.width = self.display.width
         self.height = self.display.height
-        self.draw = ImageDraw.Draw(Image.new('1', (width, height)))
-        self.draw.rectangle((0,0,width,height), outline=0, fill=0)
-        self.font = ImageFont.load_default()
+        self.image = Image.new('1', (self.width, self.height))
+        self.draw = ImageDraw.Draw(self.image)
+        self.draw.rectangle((0,0,self.width,self.height), outline=0, fill=0)
+        self.font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 25)
 
-    def refresh():
+    def refresh(self):
         self.draw.rectangle((0,0,self.width,self.height), outline=0, fill=0)
         self.display.clear()
         self.display.display()
-        self.draw.text((0, 8), "Temperature: " + str(values.values()["current_temp"]), font=self.font, fill=255)
-        self.draw.text((0, 16), "Humidity: " + str(values.values()["current_humid"]),  font=self.font, fill=255)
-'''
+
+        humid = 0.0
+        temp = 0.0
+        if values.values()["current_temp"] is not None:
+            temp = round(float(values.values()["current_temp"]), 1)
+        if values.values()["current_humid"] is not None:
+            humid = round(float(values.values()["current_humid"]), 1)
+
+        self.draw.text((0, 5), "T " + str(temp) + u"\u00b0C", font=self.font, fill=255)
+        self.draw.text((0, 35), "H " + str(humid) + "%",  font=self.font, fill=255)
+        self.display.image(self.image)
+        self.display.display()
 ################################################################################################################

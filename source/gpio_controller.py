@@ -9,6 +9,7 @@ sudo pip install --upgrade RPi.GPIO
 import RPi.GPIO as GPIO
 import os
 import glob
+import time
 import busio
 import digitalio
 import board
@@ -23,8 +24,8 @@ def initialize():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    os.system('modprobe w1-gpio')
-    os.system('modprobe w1-therm')
+    os.system('sudo modprobe w1-gpio')
+    os.system('sudo modprobe w1-therm')
 
     spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
     cs = digitalio.DigitalInOut(board.D25)
@@ -49,4 +50,4 @@ def get_onewiredevices():
 
 def read_channel(channel):
     c = analog_channels[channel]
-    return c.voltage
+    return c.value

@@ -110,6 +110,46 @@ export const messages = () => {
   })
 }
 
+export const submitPumpControl = (params) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/submit/pump_control', {...params}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
+export const submitGrowLightControl = (params) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/submit/growlight_control', {...params}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
+export const submitHeatLightControl = (params) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/submit/heat_control', {...params}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
+export const submitCameraControl = (params) => {
+  return new Promise((resolve, reject) => {
+    axios.post('/submit/camera_control', {...params}).then((data) => {
+      resolve(data);
+    }).catch((err) => {
+      reject(err);
+    })
+  })
+}
+
 export default {
   temperature,
   info,
@@ -121,5 +161,9 @@ export default {
   images,
   soil,
   pump,
-  lights
+  lights,
+  submitPumpControl,
+  submitGrowLightControl,
+  submitHeatLightControl,
+  submitCameraControl
 }

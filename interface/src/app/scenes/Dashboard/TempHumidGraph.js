@@ -23,9 +23,9 @@ class Graph extends Component {
   componentWillMount() {}
   componentDidMount() {}
   componentWillReceiveProps(nextProps) {
-    const { temperature, humidity, info, windowWidth, windowHeight } = nextProps;
+    const { temperature, humidity, info, windowWidth, windowHeight, render } = nextProps;
 
-    const initial = (!this.state.rendered && (temperature.length > 0 || humidity.length > 0) && info !== null);
+    const initial = (!this.state.rendered && render);
     const windowSizeChanged = (windowWidth !== this.props.windowWidth || windowHeight !== this.props.windowHeight);
 
     if(initial || windowSizeChanged) {
@@ -72,8 +72,7 @@ class Graph extends Component {
       }
       return newArr;
     }
-
-    const data = normalizeOutliers(temperature, 0.05, 0.2, 0, 50);
+    const data = temperature//normalizeOutliers(temperature, 0.05, 0.2, 0, 50);
     const data2 = normalizeOutliers(humidity, 0.05, 0.2, 10, 100);
 
     const currentTemp = info.current_temp;
@@ -83,8 +82,8 @@ class Graph extends Component {
     const height = bb.height-20;
     const padding = 20;
 
-    const maxTime = moment(data[data.length-1][1]);
-    const minTime = moment(data[0][1]);
+    const maxTime = data.length > 0 ? moment(data[data.length-1][1]) : 0;
+    const minTime = data.length > 0 ? moment(data[0][1]) : 0;
 
     const boxHeight = 20;
     const boxWidth = mobile ? width-(padding*3) : width-(padding*7);

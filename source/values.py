@@ -1,9 +1,10 @@
 import json
 import os
 
-def initalize():
+def initialize():
     global vals
     vals = defaults()
+    load()
 
     global DEBUG
     DEBUG = True
@@ -22,37 +23,46 @@ def initalize():
 
 def defaults():
     return {
-        "image_dir": "/home/pi/auto_farm/images",
-        "imagedb_host": "192.168.1.16",
+
+        "imagedb": "jack_farm",
+        "imagedb_username": "jack",
+        "imagedb_password": "",
+        "imagedb_host": "",
 
         "pump_time": 10, # maximum number of seconds pump can be active
-        "pump_interval": 60*30, # second interval at which the pump is then allowed to turn on
+        "pump_interval": 30, # min interval at which the pump is then allowed to turn on
         "pump_mode": "auto",
 
-        "image_interval": 60*30, # second interval at which to take an image
+        "image_interval": 30, # min interval at which to take an image
         "morning_time": 5, # time to turn on grow lights in military time hours
         "night_time": 20, # time to turn off grow lights in military time hours
         "day_temp": 26, # temperature to adjust too during the day hours
         "night_temp": 24, # temperature to adjust too during the night hours
-        "soil_sensor_limit": 60, # 0-100 analog read of the soil sensors.
+        "heat_time": 10, #maxmimum amount of min time the heat lights can be one in case the temperature probes error
+
+        "soil_calibration_values": {},
+        "soil_sensor_limit": 60000, # 0-100 analog read of the soil sensors.
         "soil_sensor_channels": [0, 1, 2, 3],
         "water_level_channel": 4,
-        #"analog_sensor_pins": [10, 9, 25, 11], # When using MCP3008 ADC Converter
-        #"tphd_sensor_pins": [15, 18], #, 17, 27],
+
         "heat_lights_pin": 23,
         "grow_lights_pin": 22,
         "pump_pin": 24,
-        "buzzer_pin": 4,
+        "buzzer_pin": 14,
 
         "grow_lights_enabled": True,
         "pump_enabled": True,
         "heat_lights_enabled": True,
         "cameras_enabled": True,
 
+        "soil_calibrating": False,
         "current_soil": [],
-        "current_temp": 0.0,
-        "current_humid": 0.0,
-        "current_water_level": 0.0
+        "current_temp": None,
+        "current_humid": None,
+        "current_water_level": None
+
+        #"analog_sensor_pins": [10, 9, 25, 11], # When using MCP3008 ADC Converter
+        #"tphd_sensor_pins": [15, 18], #, 17, 27],
     }
 
 def values():

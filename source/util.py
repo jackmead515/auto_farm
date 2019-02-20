@@ -1,6 +1,15 @@
 
 def time_ranges(st, et):
+    '''
+    Given a start and end time, finds the military time
+    hour ranges that complete the day. Example:
+    st = 5, et = 20
+    sts = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    ets = [20, 21, 23, 0, 1, 2, 3, 4]
+    '''
     if st == et:
+        return None, None
+    elif st < 0 or st > 23 or et < 0 or et > 23:
         return None, None
 
     tst = st

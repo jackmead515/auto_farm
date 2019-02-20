@@ -13,23 +13,3 @@ for camera in cameras:
 
     if path is not None:
         print(camera + ' took image: ' + name)
-
-        image_data = open(path, 'rb').read()
-
-        try:
-            dbname = "host='192.168.1.16' dbname='postgres' user='postgres'"
-            c = sql.connect(dbname)
-            db = c.cursor()
-            try:
-                db.execute('''
-                INSERT INTO images (name, data) VALUES (%s, %s)
-                ''', (name, sql.Binary(image_data)))
-                c.commit()
-            except:
-                print("failed to upload " + name + " to database")
-            finally:
-                c.close()
-        except:
-            print("failed to connect to database")
-
-        os.remove(path)

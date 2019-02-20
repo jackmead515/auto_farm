@@ -24,3 +24,5 @@ interface/yarn-debug.log*
 interface/yarn-error.log*
 
 interface/src/app/styles/lib/*
+
+local.json

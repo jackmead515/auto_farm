@@ -68,6 +68,15 @@ def initialize():
     )
     ''')
 
+    '''
+    CREATE TABLE images (
+    id SERIAL PRIMARY KEY,
+    ctime TIMESTAMP NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    data BYTEA NOT NULL
+    )
+    '''
+
     connection.commit()
     connection.close()
 
@@ -233,21 +242,20 @@ def get_temp(start, end):
     return data
 
 def save_image(name, data):
-    dbname = "host='" + values.values()["imagedb_host"] + "' dbname='postgres' user='postgres'"
-    c = postsql.connect(dbname)
+    c = get_postgres_connection()
     db = c.cursor()
     db.execute('''
-    INSERT INTO jack_images (name, data, ctime) VALUES (%s, %s, %s)
+    INSERT INTO images (name, data, ctime) VALUES (%s, %s, %s)
     ''', (name, postsql.Binary(data), datetime.datetime.now()))
     c.commit()
     c.close()
 
 def get_images(index):
-    dbname = "host='" + values.values()["imagedb_host"] + "' dbname='postgres' user='postgres'"
-    c = postsql.connect(dbname)
+    c = get_postgres_connection()
     db = c.cursor()
     db.execute('''
-    SELECT id, name, ctime FROM jack_images
+    SELECT id, name, ctime FROM images
+    WHERE id != 0
     ORDER BY ctime DESC
     OFFSET %s LIMIT 50
     ''', [index])
@@ -257,11 +265,10 @@ def get_images(index):
     return data
 
 def get_image(name):
-    dbname = "host='" + values.values()["imagedb_host"] + "' dbname='postgres' user='postgres'"
-    c = postsql.connect(dbname)
+    c = get_postgres_connection()
     db = c.cursor()
     db.execute('''
-    SELECT data FROM jack_images WHERE jack_images.name = %s LIMIT 1
+    SELECT data FROM images WHERE images.name = %s LIMIT 1
     ''', [name])
     data = db.fetchall()
     image = None
@@ -270,3 +277,13 @@ def get_image(name):
     c.commit()
     c.close()
     return image
+
+def get_postgres_connection():
+    return postsql.connect(
+        user = values.values()["imagedb_username"],
+        password = values.values()["imagedb_password"],
+        host = values.values()["imagedb_host"],
+        database = values.values()["imagedb"],
+        sslmode = 'require',
+        connect_timeout = 5
+    )

@@ -2,6 +2,7 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 import _ from 'lodash';
 import moment from 'moment';
@@ -33,11 +34,14 @@ class Dashboard extends Component {
         loading: true,
         info: null,
         toggleSoil: false,
+        renderTempGraph: false,
+        renderSoilGraph: false,
         temperature: [],
         humidity: [],
         heat: [],
         lights: [],
         pump: [],
+        soil: [],
         messages: [],
         images: [],
         imagedata: [],
@@ -60,11 +64,13 @@ class Dashboard extends Component {
       Fetch.images(0).then((res) => {
         this.setState({images: res.data.data}, () => {
           this.state.images.slice(0, 4).map((image) => {
-            Fetch.image(image[1]).then((res) => {
-              let { imagedata } = this.state;
-              imagedata.push({name: image[1], date: image[2], data: res.data.data});
-              this.setState({imagedata});
-            });
+            if(image[0] > 0) {
+              Fetch.image(image[1]).then((res) => {
+                let { imagedata } = this.state;
+                imagedata.push({name: image[1], date: image[2], data: res.data.data});
+                this.setState({imagedata});
+              });
+            }
           });
         });
       });
@@ -140,14 +146,14 @@ class Dashboard extends Component {
               let humidity = res.data.data;
               humidity = _.sortBy(humidity, (d) => moment(d[1]).valueOf());
               now = moment().format("YYYY-MM-DD HH:mm:ss");
-              weekAgo = moment().subtract(2, 'day').format("YYYY-MM-DD HH:mm:ss");
+              weekAgo = moment().subtract(5, 'hours').format("YYYY-MM-DD HH:mm:ss");
               Fetch.soil(weekAgo, now).then((res) => {
                 let soil = res.data.data;
 
                 this.props.dispatch(refreshStatus(status));
                 this.props.dispatch(refreshInfo(info));
 
-                this.setState({temperature, info, status, humidity, soil, loading: false}, () => {
+                this.setState({temperature, info, status, humidity, soil, renderTempGraph: true, renderSoilGraph: true, loading: false}, () => {
                   resolve();
                 });
               });
@@ -243,16 +249,16 @@ class Dashboard extends Component {
     currentSoil = currentSoil.filter((d) => d.value !== -1);
     const median = d3.median(currentSoil, (d) => d.value);
 
-    const medianExpression = median ? "~" + median.toFixed(2) + "%" : 'n/a';
+    const medianExpression = median ? "~ " + median.toFixed(2) : 'n/a';
 
     let sensors = null;
-    if(toggleSoil && currentSoil.length > 0) {
+    if(median && toggleSoil && currentSoil.length > 0) {
       sensors = (
         <div className="animatedFast fadeInDown row" style={{justifyContent: 'space-around', marginTop: 10}}>
           {currentSoil.map((d, i) => {
             return (
               <div key={i} className="dashboard__soilsensor">
-                <FAIcon name="filter"/> {d.value} %
+                <FAIcon name="filter"/> {d.value}
               </div>
             )
           })}
@@ -308,8 +314,38 @@ class Dashboard extends Component {
     );
   }
 
+  renderMobileImages() {
+    const { imagedata } = this.state;
+
+    if(imagedata.length > 0) {
+      return (
+        <div className="dashboard__images--mobile">
+          {imagedata.map((data, i) => {
+            return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
+          })}
+          <Link to="/gallery" className="dashboard__images--viewmore--mobile">View more...</Link>
+        </div>
+      )
+    }
+  }
+
+  renderFullImages() {
+    const { imagedata } = this.state;
+
+    if(imagedata.length > 0) {
+      return (
+        <div className="dashboard__images">
+          {imagedata.map((data, i) => {
+            return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
+          })}
+          <Link to="/gallery" className="dashboard__images--viewmore">View more...</Link>
+        </div>
+      )
+    }
+  }
+
   renderFull() {
-    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature, soil } = this.state;
+    const { loading, windowHeight, windowWidth, info, humidity, temperature, soil, renderTempGraph, renderSoilGraph } = this.state;
 
     return (
       <div className="dashboard__container">
@@ -317,20 +353,17 @@ class Dashboard extends Component {
         {this.renderStatus()}
         <TempHumidGraph
           className="dashboard__graphcontainer--temp"
+          render={renderTempGraph}
           windowWidth={windowWidth}
           windowHeight={windowHeight}
           temperature={temperature}
           humidity={humidity}
           info={info}
         />
-        <div className="dashboard__images">
-          {imagedata.map((data, i) => {
-            return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
-          })}
-          <div className="dashboard__images--viewmore">View more...</div>
-        </div>
+      {this.renderFullImages()}
         <SoilGraph
           className="dashboard__graphcontainer--soil"
+          render={renderSoilGraph}
           windowWidth={windowWidth}
           windowHeight={windowHeight}
           soil={soil}
@@ -341,13 +374,14 @@ class Dashboard extends Component {
   }
 
   renderMobile() {
-    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature, soil } = this.state;
+    const { loading, windowHeight, windowWidth, imagedata, info, humidity, temperature, soil, renderTempGraph, renderSoilGraph } = this.state;
     return (
         <div className="dashboard__container--mobile">
           <Navigator mobile={true} />
           {this.renderStatus()}
           <TempHumidGraph
             mobile={true}
+            render={renderTempGraph}
             style={{height: ((5/14)*windowWidth+(1550/7))}}
             className="dashboard__graphcontainer--mobile"
             windowWidth={windowWidth}
@@ -356,14 +390,10 @@ class Dashboard extends Component {
             humidity={humidity}
             info={info}
           />
-          <div className="dashboard__images--mobile">
-            {imagedata.map((data, i) => {
-              return <GalleryImage key={i} data={"data:image/png;base64," + data["data"]} name={data["name"]}/>
-            })}
-            <div className="dashboard__images--viewmore--mobile">View more...</div>
-          </div>
+        {this.renderMobileImages()}
           <SoilGraph
             mobile={true}
+            render={renderSoilGraph}
             style={{height: ((5/14)*windowWidth+(1550/7))}}
             className="dashboard__graphcontainer--mobile"
             windowWidth={windowWidth}
@@ -376,7 +406,12 @@ class Dashboard extends Component {
   }
 
   renderLoading() {
-    return <div style={{margin: 10}}>{"Loading..."}</div>;
+    return (
+      <div style={{display: 'flex', alignItems: 'center', margin: 10}}>
+        <div className="loader--small"/>
+        <p style={{marginLeft: 10, padding: 0}}>Loading...</p>
+      </div>
+    )
   }
 
   render() {
