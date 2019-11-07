@@ -1,4 +1,4 @@
-# auto_farm
+# ~~auto_farm~~ The new repositories are located here: https://github.com/freefarmdata
 
 ## A software solution for an autonomous plant growth chamber
 
